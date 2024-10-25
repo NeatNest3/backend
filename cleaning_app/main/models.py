@@ -228,9 +228,9 @@ class Job(models.Model):
     ]
 
     # Foreign key relationships with related name 'jobs'
-    customer = models.ForeignKey(Customer, related_name='jobs')
-    cleaner = models.ForeignKey(Cleaner, related_name='jobs')
-    home = models.ForeignKey(Home, related_name='jobs')
+    customer = models.ForeignKey(Customer, related_name='jobs', on_delete=models.CASCADE)
+    cleaner = models.ForeignKey(Cleaner, related_name='jobs', on_delete=models.SET_NULL, null=True)
+    home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
 
     # Status and schedule fields
     status = models.CharField(max_length=20, choices=STATUS_TYPE_CHOICES, blank=False, null=False)

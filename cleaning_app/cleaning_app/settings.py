@@ -94,16 +94,7 @@ WSGI_APPLICATION = 'cleaning_app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis', 
-        'NAME': 'cleaning_app',       # Database name
-        'USER': 'app_user',          # Database username
-        'PASSWORD': 'Olamide/1',      # Database password
-        'HOST': 'localhost',              # Set to 'localhost' or '127.0.0.1'
-        'PORT': '5435',                   # Default PostgreSQL port
-    }
-}
+DATABASES = {}
 
 
 # Password validation

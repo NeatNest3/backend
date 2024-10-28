@@ -254,6 +254,7 @@ class Job(models.Model):
 #---------------------------------------------------------------------------------------------------------
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Account model is needed in order to have the account_id in Ticket to be a foreign key. This will allow the ticket to be linked to a valid account.   
 class Account(models.Model):
     id = models.AutoField(primary_key=True)
@@ -369,6 +370,8 @@ class Task(models.Model):
     def __str__(self):
         return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
 #=========================================================================================================
+=======
+>>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d
 # Review model
 class Review(models.Model):
     job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name="reviews")
@@ -454,5 +457,9 @@ class Message(models.Model):
 
     def is_sent_by(self, user):
         """Check if the message was sent by a specific user."""
+<<<<<<< HEAD
+        return self.sender == user
+>>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d
+=======
         return self.sender == user
 >>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d

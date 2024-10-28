@@ -36,6 +36,18 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal309.dll"
+
+GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
+
+
+
+
+
+
+
+
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -82,7 +94,16 @@ WSGI_APPLICATION = 'cleaning_app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {}
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis', 
+        'NAME': 'cleaning_app',       # Database name
+        'USER': 'app_user',          # Database username
+        'PASSWORD': 'Olamide/1',      # Database password
+        'HOST': 'localhost',              # Set to 'localhost' or '127.0.0.1'
+        'PORT': '5435',                   # Default PostgreSQL port
+    }
+}
 
 
 # Password validation

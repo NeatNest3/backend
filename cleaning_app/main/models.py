@@ -252,3 +252,89 @@ class Job(models.Model):
     
 #---------------------------------------------------------------------------------------------------------
 
+# Review model
+class Review(models.Model):
+    job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name="reviews")
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="given_reviews")
+    reviewee = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_reviews")
+    reviewer_role = models.CharField(max_length=10)
+    reviewee_role = models.CharField(max_length=10)
+    review_text = models.TextField()
+    review_date = models.DateField()
+    rating = models.IntegerField()
+
+    def __str__(self):
+        return f"Review by {self.reviewer.username} for {self.reviewee.username} - Rating: {self.rating}"
+
+    def is_positive(self):
+        """Check if the review rating is positive (4 or 5)."""
+        return self.rating >= 4
+
+    #---------------------------------------------------------------------------------------------------------
+
+    # PaymentMethod model
+class PaymentMethod(models.Model):
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="payment_methods")
+    type = models.CharField(max_length=50)
+    card_number = models.CharField(max_length=255)  # Store hashed
+    last_four = models.CharField(max_length=4)
+    exp_month = models.IntegerField()
+    exp_year = models.IntegerField()
+    provider = models.CharField(max_length=50)
+    default = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.type} ending in {self.last_four} for {self.customer.username}"
+
+    def is_expired(self):
+        """Check if the payment method is expired."""
+        from datetime import datetime
+        return (self.exp_year < datetime.now().year) or (self.exp_year == datetime.now().year and self.exp_month < datetime.now().month)
+
+    #---------------------------------------------------------------------------------------------------------
+    # BankAccount model
+class BankAccount(models.Model):
+    cleaner = models.ForeignKey(Cleaner, on_delete=models.CASCADE, related_name="bank_accounts")
+    bank = models.CharField(max_length=100)
+    account_last_four = models.CharField(max_length=4)
+    account_type = models.CharField(max_length=50)
+    account_number = models.CharField(max_length=255)  # Store hashed
+    routing_number = models.CharField(max_length=255)  # Store hashed
+    default = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Bank Account ({self.bank}) for {self.cleaner.username}"
+
+    def is_default(self):
+        """Check if this bank account is the default one."""
+        return self.default
+
+    #---------------------------------------------------------------------------------------------------------
+    # Chat model
+class Chat(models.Model):
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customer_chats")
+    cleaner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cleaner_chats")
+
+    def __str__(self):
+        return f"Chat between {self.customer.username} and {self.cleaner.username}"
+
+    #---------------------------------------------------------------------------------------------------------
+    # Message model
+class Message(models.Model):
+    chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    message = models.TextField()
+    date = models.DateField()
+    time = models.TimeField()
+
+    def __str__(self):
+        return f"Message from {self.sender.username} to {self.receiver.username} on {self.date} at {self.time}"
+
+    def is_sent_by(self, user):
+        """Check if the message was sent by a specific user."""
+        return self.sender == user

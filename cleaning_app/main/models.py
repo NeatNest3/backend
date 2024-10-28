@@ -4,6 +4,7 @@ from django.conf import settings  # To reference the User model
 from django.core.validators import MinValueValidator, MaxValueValidator # to set min and max values for ratings
 from django.contrib.gis.db import models as gis_models #for tracking geo location data for our cleaners
 from django.core.exceptions import ValidationError
+import uuid
 
 #---------------------------------------------------------------------------------------------------------
 
@@ -252,3 +253,117 @@ class Job(models.Model):
     
 #---------------------------------------------------------------------------------------------------------
 
+# Account model is needed in order to have the account_id in Ticket to be a foreign key. This will allow the ticket to be linked to a valid account.   
+class Account(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+
+    def __str__(self):
+        return self.name
+
+#---------------------------------------------------------------------------------------------------------
+class Ticket(models.Model):
+
+    customer = Customer
+    cleaner = Cleaner
+     
+    ROLE_CHOICES = (
+        ('customer', 'Customer'),
+        ('cleaner', 'Cleaner'),
+    )
+
+    # id creates a universal unique identifier that guarantees a unique ID for each ticket.
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Account_id as an integer field
+    account_id = models.ForeignKey(Account, on_delete=models.CASCADE) 
+
+    # Role as an integer field
+    role = models.IntegerField(choices=ROLE_CHOICES)
+
+    # Ticket content as a text field
+    ticket_content = models.TextField()
+
+    # Date and time fields
+    date = models.DateField()
+    time = models.TimeField()
+
+    # Status as a character field with max length of 10
+    status = models.CharField(max_length=10)
+
+    
+    def __str__(self):
+        return f"Ticket {self.id} - Role: {self.ROLE_CHOICES()} - Status: {self.status}"
+
+#------------------------------------------------------------------------------------------------------    
+class Availability(models.Model):
+    DAYS_OF_WEEK = [
+        ('monday', 'Monday'),
+        ('tuesday', 'Tuesday'),
+        ('wednesday', 'Wednesday'),
+        ('thursday', 'Thursday'),
+        ('friday', 'Friday'),
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    cleaner_id = models.ForeignKey(Cleaner, on_delete=models.CASCADE)
+    day_of_week = models.CharField(max_length=10, choices=DAYS_OF_WEEK)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.cleaner_id} available on {self.day_of_week} from {self.start_time} to {self.end_time}"
+
+#---------------------------------------------------------------------------------------------------------
+class Payment(models.Model):
+    # Foreign key fields assuming `Job` and `Customer` models exist
+    service = models.ForeignKey('Service', on_delete=models.CASCADE, related_name='payments')
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='payments')
+    
+    # Payment fields/ amount made decimal field which allows control over the number of digits and decimal places.
+    method = models.CharField(max_length=25)
+    status = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=6, decimal_places=2)
+    date = models.DateField()
+
+    def __str__(self):
+        return f"Payment(id={self.id}, service_id={self.service.id}, customer_id={self.customer.id}, " \
+               f"method='{self.method}', status='{self.status}', amount={self.amount}, date={self.date})"
+    
+#------------------------------------------------------------------------------------------------------------
+class Service(models.Model):
+    # Service fields
+    name = models.CharField(max_length=50)
+    description = models.TextField()
+    price_range = models.DecimalField(max_digits=6, decimal_places=2)
+    estimated_duration = models.DurationField()
+
+    def __str__(self):
+        return f"{self.name} - ${self.price_range} ({self.estimated_duration})"
+
+#------------------------------------------------------------------------------------------------------------
+class Task(models.Model):
+    # Foreign key to a Job model (assuming Job model exists)
+    service = models.ForeignKey('service', on_delete=models.CASCADE, related_name='tasks')
+
+    # Basic fields
+    name = models.CharField(max_length=50)
+    description = models.TextField()
+    status = models.CharField(max_length=15)
+    
+    # Optional fields
+    duration = models.DurationField(null=True, blank=True)  # Duration field for time intervals
+    price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    # Notes fields
+    cleaner_notes = models.TextField()
+    customer_notes = models.TextField()
+
+    # Optional pictures field using ManyToMany with an Image model
+    pictures = models.ManyToManyField('Image', blank=True, related_name='tasks')  # Optional field
+
+    def __str__(self):
+        return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"

@@ -5,10 +5,10 @@ from .serializers import *
 from rest_framework import generics
 from .models import User, Customer, Specialty, Service_Provider, Home, Job, Availability, Payment, Service, Task, Review, Payment_Method, Bank_Account
 from .serializers import (
-    UserSerializer, CustomerSerializer, SpecialtySerializer, ServiceProviderSerializer,
+    UserSerializer, CustomerSerializer, SpecialtySerializer, Service_ProviderSerializer,
     HomeSerializer, JobSerializer, AvailabilitySerializer, PaymentSerializer,
-    ServiceSerializer, TaskSerializer, ReviewSerializer, PaymentMethodSerializer,
-    BankAccountSerializer
+    ServiceSerializer, TaskSerializer, ReviewSerializer, Payment_MethodSerializer,
+    Bank_AccountSerializer
 )
 
 #---------------------------------------------------------------------------------------------------------
@@ -43,13 +43,13 @@ class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views
-class ServiceProviderList(generics.ListCreateAPIView):
+class Service_ProviderList(generics.ListCreateAPIView):
     queryset = Service_Provider.objects.all()
-    serializer_class = ServiceProviderSerializer
+    serializer_class = Service_ProviderSerializer
 
-class ServiceProviderDetails(generics.RetrieveUpdateDestroyAPIView):
+class Service_ProviderDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Service_Provider.objects.all()
-    serializer_class = ServiceProviderSerializer
+    serializer_class = Service_ProviderSerializer
 
 #---------------------------------------------------------------------------------------------------------
 # Home Views
@@ -123,20 +123,20 @@ class ReviewDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Method Views
-class PaymentMethodList(generics.ListCreateAPIView):
+class Payment_MethodList(generics.ListCreateAPIView):
     queryset = Payment_Method.objects.all()
-    serializer_class = PaymentMethodSerializer
+    serializer_class = Payment_MethodSerializer
 
-class PaymentMethodDetails(generics.RetrieveUpdateDestroyAPIView):
+class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Payment_Method.objects.all()
-    serializer_class = PaymentMethodSerializer
+    serializer_class = Payment_MethodSerializer
 
 #---------------------------------------------------------------------------------------------------------
 # Bank Account Views
-class BankAccountList(generics.ListCreateAPIView):
+class Bank_AccountList(generics.ListCreateAPIView):
     queryset = Bank_Account.objects.all()
-    serializer_class = BankAccountSerializer
+    serializer_class = Bank_AccountSerializer
 
-class BankAccountDetails(generics.RetrieveUpdateDestroyAPIView):
+class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Bank_Account.objects.all()
-    serializer_class = BankAccountSerializer
+    serializer_class = Bank_AccountSerializer

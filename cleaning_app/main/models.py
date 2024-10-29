@@ -96,6 +96,24 @@ class Customer(models.Model):
         
 #---------------------------------------------------------------------------------------------------------
 
+class Specialty(models.Model):
+
+    # The name of the specialty, e.g., "Deep Cleaning"
+    name = models.CharField(max_length=50)
+
+    # brief description of what the specialty entails
+    description = models.TextField()
+
+    # Optional fields if needed
+    # For example, could add a price modifier or a level of expertise requirement
+    # price_modifier = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    # experience_level = models.CharField(max_length=50, blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+    
+#---------------------------------------------------------------------------------------------------------
+
 class Service_Provider(models.Model):
 
     # Link to the User model via a One-to-One field, automatically sets the PK of User to FK of Cleaner
@@ -129,26 +147,9 @@ class Service_Provider(models.Model):
 
     def __str__(self):
         return f'Service Provider: {self.user.username}'
-
-#---------------------------------------------------------------------------------------------------------
-
-class Specialty(models.Model):
-
-    # The name of the specialty, e.g., "Deep Cleaning"
-    name = models.CharField(max_length=50)
-
-    # brief description of what the specialty entails
-    description = models.TextField()
-
-    # Optional fields if needed
-    # For example, could add a price modifier or a level of expertise requirement
-    # price_modifier = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    # experience_level = models.CharField(max_length=50, blank=True, null=True)
-
-    def __str__(self):
-        return self.name
     
 #---------------------------------------------------------------------------------------------------------
+
 class Home(models.Model):
 
     HOME_TYPE_CHOICES = [
@@ -211,7 +212,7 @@ class Job(models.Model):
 
     # Foreign key relationships with related name 'jobs'
     customer = models.ForeignKey(Customer, related_name='jobs', on_delete=models.CASCADE)
-    cleaner = models.ForeignKey(Cleaner, related_name='jobs', on_delete=models.SET_NULL, null=True)
+    cleaner = models.ForeignKey(Service_Provider, related_name='jobs', on_delete=models.SET_NULL, null=True)
     home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
 
     # Status and schedule fields
@@ -246,7 +247,7 @@ class Availability(models.Model):
     ]
 
     id = models.AutoField(primary_key=True)
-    cleaner_id = models.ForeignKey(Cleaner, on_delete=models.CASCADE)
+    cleaner_id = models.ForeignKey(Service_Provider, on_delete=models.CASCADE)
     day_of_week = models.CharField(max_length=10, choices=DAYS_OF_WEEK)
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -355,7 +356,8 @@ class PaymentMethod(models.Model):
 
     # BankAccount model
 class BankAccount(models.Model):
-    cleaner = models.ForeignKey(Cleaner, on_delete=models.CASCADE, related_name="bank_accounts")
+    
+    cleaner = models.ForeignKey(Service_Provider, on_delete=models.CASCADE, related_name="bank_accounts")
     bank = models.CharField(max_length=100)
     account_last_four = models.CharField(max_length=4)
     account_type = models.CharField(max_length=50)

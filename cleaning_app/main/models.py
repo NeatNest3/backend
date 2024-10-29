@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser # inherited by user model for baked in Django features
 from django.conf import settings  # To reference the User model
 from django.core.validators import MinValueValidator, MaxValueValidator # to set min and max values for ratings
-from django.contrib.gis.db import models as gis_models #for tracking geo location data for our cleaners
 from django.core.exceptions import ValidationError
 # import uuid
 
@@ -85,7 +84,6 @@ class Customer(models.Model):
 
     rating = models.FloatField(validators=[MinValueValidator(1.0), MaxValueValidator(5.0)], blank=True, null=True) #customer rating 1-5
     bio = models.TextField(max_length=750, blank=True) # bio with max length of 750 characters
-    profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
 
     def __str__(self):
         return f"Customer: {self.user.username}"
@@ -136,14 +134,8 @@ class Cleaner(models.Model):
     # TextField to describe cleaner and work experience
     bio_work_history = models.TextField(max_length=1000, blank=True)
 
-    #profile picture via image field, required for cleaner
-    profile_pic = models.ImageField(upload_to='profile_pics/', blank=False, null=False)
-
     # Link to Specialty model using a Many-to-Many relationship
     specialties = models.ManyToManyField(Specialty, blank=True, related_name='cleaners')
-
-    # stores location data in cleaner data table
-    location = gis_models.PointField(geography=True, null=True)
 
     def __str__(self):
         return f'Cleaner: {self.user.username}'
@@ -185,8 +177,6 @@ class Home(models.Model):
     pets = models.JSONField(default=dict, blank=False, null=False)
     kids = models.CharField(max_length=2, blank=False, null=False)
 
-    # Outdoor picture, special instructions
-    outdoor_image = models.ImageField(upload_to='home_images/', null=False, blank=False)
     special_instructions = models.TextField(max_length=1000, blank=True, null=True)
 
     

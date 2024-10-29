@@ -332,7 +332,7 @@ class Review(models.Model):
 #---------------------------------------------------------------------------------------------------------
 
     # PaymentMethod model
-class PaymentMethod(models.Model):
+class Payment_Method(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="payment_methods")
     type = models.CharField(max_length=50)
     card_number = models.CharField(max_length=255)  # Store hashed
@@ -355,7 +355,7 @@ class PaymentMethod(models.Model):
 #---------------------------------------------------------------------------------------------------------
 
     # BankAccount model
-class BankAccount(models.Model):
+class Bank_Account(models.Model):
     
     cleaner = models.ForeignKey(Service_Provider, on_delete=models.CASCADE, related_name="bank_accounts")
     bank = models.CharField(max_length=100)

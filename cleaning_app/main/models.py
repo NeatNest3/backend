@@ -4,7 +4,7 @@ from django.conf import settings  # To reference the User model
 from django.core.validators import MinValueValidator, MaxValueValidator # to set min and max values for ratings
 from django.contrib.gis.db import models as gis_models #for tracking geo location data for our cleaners
 from django.core.exceptions import ValidationError
-import uuid
+# import uuid
 
 #---------------------------------------------------------------------------------------------------------
 
@@ -13,11 +13,15 @@ class User(AbstractUser):
     ROLE_CHOICES = (
         ('customer', 'Customer'),
         ('cleaner', 'Cleaner'),
-        ('both', 'Both'),
     )
 
-    #choices for allergies. uses list so we can store multiple if needed.
-    ALLERGY_CHOICES = ['none', 'dogs', 'cats', 'dust', 'pollen', 'mold', 'fragrance', 'SLS', 'ammonia', 'bleach', 'other']
+    #choices for allergies
+    ALLERGY_CHOICES = [
+        ('none', 'None'), ('dogs', 'Dogs'), ('cats', 'Cats'), 
+        ('dust', 'Dust'), ('pollen', 'Pollen'), ('mold', 'Mold'), 
+        ('fragrance', 'Fragrance'), ('SLS', 'SLS'), ('ammonia', 'Ammonia'), 
+        ('bleach', 'Bleach'), ('other', 'Other')
+    ]
 
     #preffered name field for nicknames/preferences 
     preferred_name = models.CharField(max_length=25, blank=True, null=True)
@@ -151,22 +155,14 @@ class Home(models.Model):
     HOME_TYPE_CHOICES = [
         ('apartment', 'Apartment'),
         ('house', 'House'),
-        ('condo', 'Condo'),
         ('townhouse', 'Townhouse'),
-        ('duplex', 'Duplex'),
-        ('loft', 'Loft'),
-        ('studio', 'Studio'),
-        ('cottage', 'Cottage'),
-        ('cabin', 'Cabin'),
-        ('mobile_home', 'Mobile Home'),
-        ('bungalow', 'Bungalow'),
-        ('villa', 'Villa'),
-        ('mansion', 'Mansion'),
-        ('farmhouse', 'Farmhouse'),
         ('other', 'Other'),
     ]
 
-    PET_TYPE_CHOICES = ['dog', 'cat', 'bird', 'fish', 'reptile', 'other', 'none']
+    PET_TYPE_CHOICES = [
+        ('dog', 'Dog'), ('cat', 'Cat'), ('bird', 'Bird'), 
+        ('fish', 'Fish'), ('reptile', 'Reptile'), ('other', 'Other'), ('none', 'None')
+    ]
 
     #Foreign key to cusomter_id
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='homes')
@@ -206,18 +202,6 @@ class Home(models.Model):
 
 #---------------------------------------------------------------------------------------------------------
 
-# Model for storing indoor images of the home if customer would like to
-class Indoor_Home_Image(models.Model):
-    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='home_images/')
-    caption = models.CharField(max_length=100, blank=True, null=True)  # Optional caption
-
-    def __str__(self):
-        return f"Image for {self.home.address}"
-    
-#---------------------------------------------------------------------------------------------------------
-
-
 class Job(models.Model):
 
     STATUS_TYPE_CHOICES = [
@@ -251,54 +235,8 @@ class Job(models.Model):
     def __str__(self):
         return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.cleaner}"
     
-#---------------------------------------------------------------------------------------------------------
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-# Account model is needed in order to have the account_id in Ticket to be a foreign key. This will allow the ticket to be linked to a valid account.   
-class Account(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-
-    def __str__(self):
-        return self.name
-
-#---------------------------------------------------------------------------------------------------------
-class Ticket(models.Model):
-
-    customer = Customer
-    cleaner = Cleaner
-     
-    ROLE_CHOICES = (
-        ('customer', 'Customer'),
-        ('cleaner', 'Cleaner'),
-    )
-
-    # id creates a universal unique identifier that guarantees a unique ID for each ticket.
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Account_id as an integer field
-    account_id = models.ForeignKey(Account, on_delete=models.CASCADE) 
-
-    # Role as an integer field
-    role = models.IntegerField(choices=ROLE_CHOICES)
-
-    # Ticket content as a text field
-    ticket_content = models.TextField()
-
-    # Date and time fields
-    date = models.DateField()
-    time = models.TimeField()
-
-    # Status as a character field with max length of 10
-    status = models.CharField(max_length=10)
-
-    
-    def __str__(self):
-        return f"Ticket {self.id} - Role: {self.ROLE_CHOICES()} - Status: {self.status}"
-
 #------------------------------------------------------------------------------------------------------    
+
 class Availability(models.Model):
     DAYS_OF_WEEK = [
         ('monday', 'Monday'),
@@ -320,6 +258,7 @@ class Availability(models.Model):
         return f"{self.cleaner_id} available on {self.day_of_week} from {self.start_time} to {self.end_time}"
 
 #---------------------------------------------------------------------------------------------------------
+
 class Payment(models.Model):
     # Foreign key fields assuming `Job` and `Customer` models exist
     service = models.ForeignKey('Service', on_delete=models.CASCADE, related_name='payments')
@@ -336,6 +275,7 @@ class Payment(models.Model):
                f"method='{self.method}', status='{self.status}', amount={self.amount}, date={self.date})"
     
 #------------------------------------------------------------------------------------------------------------
+
 class Service(models.Model):
     # Service fields
     name = models.CharField(max_length=50)
@@ -347,9 +287,10 @@ class Service(models.Model):
         return f"{self.name} - ${self.price_range} ({self.estimated_duration})"
 
 #------------------------------------------------------------------------------------------------------------
+
 class Task(models.Model):
     # Foreign key to a Job model (assuming Job model exists)
-    service = models.ForeignKey('service', on_delete=models.CASCADE, related_name='tasks')
+    job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name='tasks')
 
     # Basic fields
     name = models.CharField(max_length=50)
@@ -365,13 +306,13 @@ class Task(models.Model):
     customer_notes = models.TextField()
 
     # Optional pictures field using ManyToMany with an Image model
-    pictures = models.ManyToManyField('Image', blank=True, related_name='tasks')  # Optional field
+    # pictures = models.ManyToManyField('Image', blank=True, related_name='tasks')  # Optional field
 
     def __str__(self):
         return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
-#=========================================================================================================
-=======
->>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d
+    
+#---------------------------------------------------------------------------------------------------------
+
 # Review model
 class Review(models.Model):
     job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name="reviews")
@@ -381,7 +322,7 @@ class Review(models.Model):
     reviewee_role = models.CharField(max_length=10)
     review_text = models.TextField()
     review_date = models.DateField()
-    rating = models.IntegerField()
+    rating = models.FloatField([MinValueValidator(1.0), MaxValueValidator(5.0)], blank=False, null=False)
 
     def __str__(self):
         return f"Review by {self.reviewer.username} for {self.reviewee.username} - Rating: {self.rating}"
@@ -390,7 +331,7 @@ class Review(models.Model):
         """Check if the review rating is positive (4 or 5)."""
         return self.rating >= 4
 
-    #---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
 
     # PaymentMethod model
 class PaymentMethod(models.Model):
@@ -413,7 +354,8 @@ class PaymentMethod(models.Model):
         from datetime import datetime
         return (self.exp_year < datetime.now().year) or (self.exp_year == datetime.now().year and self.exp_month < datetime.now().month)
 
-    #---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+
     # BankAccount model
 class BankAccount(models.Model):
     cleaner = models.ForeignKey(Cleaner, on_delete=models.CASCADE, related_name="bank_accounts")
@@ -432,34 +374,70 @@ class BankAccount(models.Model):
     def is_default(self):
         """Check if this bank account is the default one."""
         return self.default
+    
+#---------------------------------------------------------------------------------------------------------
 
-    #---------------------------------------------------------------------------------------------------------
-    # Chat model
-class Chat(models.Model):
-    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customer_chats")
-    cleaner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cleaner_chats")
+# class Ticket(models.Model):
 
-    def __str__(self):
-        return f"Chat between {self.customer.username} and {self.cleaner.username}"
+#     customer = Customer
+#     cleaner = Cleaner
+     
+#     ROLE_CHOICES = (
+#         ('customer', 'Customer'),
+#         ('cleaner', 'Cleaner'),
+#     )
 
-    #---------------------------------------------------------------------------------------------------------
-    # Message model
-class Message(models.Model):
-    chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name="messages")
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
-    message = models.TextField()
-    date = models.DateField()
-    time = models.TimeField()
+#     # id creates a universal unique identifier that guarantees a unique ID for each ticket.
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+#     # Account_id as an integer field
+#     account_id = models.ForeignKey(Account, on_delete=models.CASCADE) 
 
-    def __str__(self):
-        return f"Message from {self.sender.username} to {self.receiver.username} on {self.date} at {self.time}"
+#     # Role as an integer field
+#     role = models.IntegerField(choices=ROLE_CHOICES)
 
-    def is_sent_by(self, user):
-        """Check if the message was sent by a specific user."""
-<<<<<<< HEAD
-        return self.sender == user
->>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d
-=======
-        return self.sender == user
->>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d
+#     # Ticket content as a text field
+#     ticket_content = models.TextField()
+
+#     # Date and time fields
+#     date = models.DateField()
+#     time = models.TimeField()
+
+#     # Status as a character field with max length of 10
+#     status = models.CharField(max_length=10)
+
+    
+#     def __str__(self):
+#         return f"Ticket {self.id} - Role: {self.ROLE_CHOICES()} - Status: {self.status}"
+
+
+#     #---------------------------------------------------------------------------------------------------------
+#     # Chat model
+# class Chat(models.Model):
+#     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customer_chats")
+#     cleaner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cleaner_chats")
+
+#     def __str__(self):
+#         return f"Chat between {self.customer.username} and {self.cleaner.username}"
+
+#     #---------------------------------------------------------------------------------------------------------
+#     # Message model
+# class Message(models.Model):
+#     chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name="messages")
+#     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+#     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+#     message = models.TextField()
+#     date = models.DateField()
+#     time = models.TimeField()
+
+#     def __str__(self):
+#         return f"Message from {self.sender.username} to {self.receiver.username} on {self.date} at {self.time}"
+
+#     def is_sent_by(self, user):
+#         """Check if the message was sent by a specific user."""
+# <<<<<<< HEAD
+#         return self.sender == user
+# >>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d
+# =======
+#         return self.sender == user
+# >>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d

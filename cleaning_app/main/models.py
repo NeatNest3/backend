@@ -96,25 +96,7 @@ class Customer(models.Model):
         
 #---------------------------------------------------------------------------------------------------------
 
-class Specialty(models.Model):
-
-    # The name of the specialty, e.g., "Deep Cleaning"
-    name = models.CharField(max_length=50)
-
-    # brief description of what the specialty entails
-    description = models.TextField()
-
-    # Optional fields if needed
-    # For example, could add a price modifier or a level of expertise requirement
-    # price_modifier = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    # experience_level = models.CharField(max_length=50, blank=True, null=True)
-
-    def __str__(self):
-        return self.name
-    
-#---------------------------------------------------------------------------------------------------------
-
-class Cleaner(models.Model):
+class Service_Provider(models.Model):
 
     # Link to the User model via a One-to-One field, automatically sets the PK of User to FK of Cleaner
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -135,13 +117,38 @@ class Cleaner(models.Model):
     bio_work_history = models.TextField(max_length=1000, blank=True)
 
     # Link to Specialty model using a Many-to-Many relationship
-    specialties = models.ManyToManyField(Specialty, blank=True, related_name='cleaners')
+    specialties = models.ManyToManyField(Specialty, blank=True, related_name='service_providers')
+
+    # Address info, we will use an API for auto suggestions
+    country = models.CharField(max_length=50, blank=False, null=False)
+    address_line_one = models.CharField(max_length=255, blank=False, null=False)
+    address_line_two = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=False, null=False)
+    state = models.CharField(max_length=50, blank=False, null=False)
+    zipcode = models.CharField(max_length=10, blank=False, null=False)
 
     def __str__(self):
-        return f'Cleaner: {self.user.username}'
+        return f'Service Provider: {self.user.username}'
 
 #---------------------------------------------------------------------------------------------------------
 
+class Specialty(models.Model):
+
+    # The name of the specialty, e.g., "Deep Cleaning"
+    name = models.CharField(max_length=50)
+
+    # brief description of what the specialty entails
+    description = models.TextField()
+
+    # Optional fields if needed
+    # For example, could add a price modifier or a level of expertise requirement
+    # price_modifier = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    # experience_level = models.CharField(max_length=50, blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+    
+#---------------------------------------------------------------------------------------------------------
 class Home(models.Model):
 
     HOME_TYPE_CHOICES = [

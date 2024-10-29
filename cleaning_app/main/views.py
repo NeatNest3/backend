@@ -1,7 +1,8 @@
+
 from rest_framework import generics
 from .models import *
 from .serializers import *
-
+from django.http import HttpResponse
 from rest_framework import generics
 from .models import User, Customer, Specialty, Service_Provider, Home, Job, Availability, Payment, Service, Task, Review, Payment_Method, Bank_Account
 from .serializers import (
@@ -10,6 +11,10 @@ from .serializers import (
     ServiceSerializer, TaskSerializer, ReviewSerializer, Payment_MethodSerializer,
     Bank_AccountSerializer
 )
+from django.shortcuts import render
+
+def homepage(request):
+    return render(request, 'main/index.html')  # Use 'appname/filename.html'
 
 #---------------------------------------------------------------------------------------------------------
 # User Views

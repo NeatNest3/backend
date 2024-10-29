@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleaning App Homepage</title>
+</head>
+<body>
+    <header><h1>Welcome to the Cleaning App Homepage!</h1></header><br>
+
+    <div><h3>Below you will find the path structure for each endpoint. Please add the path to the end of your browser URL to access a view</h3></div><br>
+
+    <div><pre>urlpatterns = [
+        path("", homepage, name="homepage"),
+
+        path("users/", UserList.as_view(), name='user-list'),
+
+        path("users/&lt;int:pk&gt;/", UserDetails.as_view(), name='user-details'),
+
+        path("customers/", CustomerList.as_view(), name='customer-list'),
+
+        path("customers/&lt;int:pk&gt;/", CustomerDetails.as_view(), name='customer-details'),
+
+        path("specialties/", SpecialtyList.as_view(), name='specialty-list'),
+
+        path("specialties/&lt;int:pk&gt;/", SpecialtyDetails.as_view(), name='specialty-details'),
+
+        path("service-providers/", Service_ProviderList.as_view(), name='service-provider-list'),
+
+        path("service-providers/&lt;int:pk&gt;/", Service_ProviderDetails.as_view(), name='service-provider-details'),
+
+        path("homes/", HomeList.as_view(), name="home-list"),
+
+        path("homes/&lt;int:pk&gt;/", HomeDetails.as_view(), name="home-details"),
+
+        path("jobs/", JobList.as_view(), name="job-list"),
+
+        path("jobs/&lt;int:pk&gt;/", JobDetails.as_view(), name="job-details"),
+
+        path("availabilities/", AvailabilityList.as_view(), name="availability-list"),
+
+        path("availabilities/&lt;int:pk&gt;/", AvailabilityDetails.as_view(), name="availability-details"),
+
+        path("payments/", PaymentList.as_view(), name="payment-list"),
+
+        path("payments/&lt;int:pk&gt;/", PaymentDetails.as_view(), name="payment-details"),
+
+        path("services/", ServiceList.as_view(), name="service-list"),
+
+        path("services/&lt;int:pk&gt;/", ServiceDetails.as_view(), name="service-details"),
+
+        path("tasks/", TaskList.as_view(), name="task-list"),
+
+        path("tasks/&lt;int:pk&gt;/", TaskDetails.as_view(), name="task-details"),
+
+        path("reviews/", ReviewList.as_view(), name="review-list"),
+
+        path("reviews/&lt;int:pk&gt;/", ReviewDetails.as_view(), name="review-details"),
+
+        path("payment-methods/", Payment_MethodList.as_view(), name="payment-method-list"),
+
+        path("payment-methods/&lt;int:pk&gt;/", Payment_MethodDetails.as_view(), name="payment-method-details"),
+
+        path("bank-accounts/", Bank_AccountList.as_view(), name="bank-account-list"),
+
+        path("bank-accounts/&lt;int:pk&gt;/", Bank_AccountDetails.as_view(), name="bank-account-details"),
+    ]
+    </pre></div>
+</body>
+</html>

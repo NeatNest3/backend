@@ -12,11 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 
-try:
-    from .local_settings import *
-except ImportError:
-    pass
-
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,11 +38,6 @@ GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
 
 
 
-
-
-
-
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -55,9 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main.apps.MainConfig',
+    'cleaning_app.main.apps.MainConfig',
     'rest_framework',
-    'django.contrib.gis',
 ]
 
 MIDDLEWARE = [
@@ -70,7 +59,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'cleaning_app.urls'
+ROOT_URLCONF = 'cleaning_app.cleaning_app.urls'
 
 TEMPLATES = [
     {
@@ -88,7 +77,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'cleaning_app.wsgi.application'
+WSGI_APPLICATION = 'cleaning_app.cleaning_app.wsgi.application'
 
 
 # Database
@@ -135,3 +124,9 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+try:
+    from .local_settings import *
+except ImportError:
+    pass

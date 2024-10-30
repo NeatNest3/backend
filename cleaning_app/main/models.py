@@ -2,8 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser # inherited by user model for baked in Django features
 from django.conf import settings  # To reference the User model
 from django.core.validators import MinValueValidator, MaxValueValidator # to set min and max values for ratings
-from django.contrib.gis.db import models as gis_models #for tracking geo location data for our cleaners
 from django.core.exceptions import ValidationError
+# import uuid
 
 #---------------------------------------------------------------------------------------------------------
 
@@ -12,11 +12,15 @@ class User(AbstractUser):
     ROLE_CHOICES = (
         ('customer', 'Customer'),
         ('cleaner', 'Cleaner'),
-        ('both', 'Both'),
     )
 
-    #choices for allergies. uses list so we can store multiple if needed.
-    ALLERGY_CHOICES = ['none', 'dogs', 'cats', 'dust', 'pollen', 'mold', 'fragrance', 'SLS', 'ammonia', 'bleach', 'other']
+    #choices for allergies
+    ALLERGY_CHOICES = [
+        ('none', 'None'), ('dogs', 'Dogs'), ('cats', 'Cats'), 
+        ('dust', 'Dust'), ('pollen', 'Pollen'), ('mold', 'Mold'), 
+        ('fragrance', 'Fragrance'), ('SLS', 'SLS'), ('ammonia', 'Ammonia'), 
+        ('bleach', 'Bleach'), ('other', 'Other')
+    ]
 
     #preffered name field for nicknames/preferences 
     preferred_name = models.CharField(max_length=25, blank=True, null=True)
@@ -80,7 +84,6 @@ class Customer(models.Model):
 
     rating = models.FloatField(validators=[MinValueValidator(1.0), MaxValueValidator(5.0)], blank=True, null=True) #customer rating 1-5
     bio = models.TextField(max_length=750, blank=True) # bio with max length of 750 characters
-    profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
 
     def __str__(self):
         return f"Customer: {self.user.username}"
@@ -111,7 +114,7 @@ class Specialty(models.Model):
     
 #---------------------------------------------------------------------------------------------------------
 
-class Cleaner(models.Model):
+class Service_Provider(models.Model):
 
     # Link to the User model via a One-to-One field, automatically sets the PK of User to FK of Cleaner
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -131,18 +134,20 @@ class Cleaner(models.Model):
     # TextField to describe cleaner and work experience
     bio_work_history = models.TextField(max_length=1000, blank=True)
 
-    #profile picture via image field, required for cleaner
-    profile_pic = models.ImageField(upload_to='profile_pics/', blank=False, null=False)
-
     # Link to Specialty model using a Many-to-Many relationship
-    specialties = models.ManyToManyField(Specialty, blank=True, related_name='cleaners')
+    specialties = models.ManyToManyField(Specialty, blank=True, related_name='service_providers')
 
-    # stores location data in cleaner data table
-    location = gis_models.PointField(geography=True, null=True)
+    # Address info, we will use an API for auto suggestions
+    country = models.CharField(max_length=50, blank=False, null=False)
+    address_line_one = models.CharField(max_length=255, blank=False, null=False)
+    address_line_two = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=False, null=False)
+    state = models.CharField(max_length=50, blank=False, null=False)
+    zipcode = models.CharField(max_length=10, blank=False, null=False)
 
     def __str__(self):
-        return f'Cleaner: {self.user.username}'
-
+        return f'Service Provider: {self.user.username}'
+    
 #---------------------------------------------------------------------------------------------------------
 
 class Home(models.Model):
@@ -150,22 +155,14 @@ class Home(models.Model):
     HOME_TYPE_CHOICES = [
         ('apartment', 'Apartment'),
         ('house', 'House'),
-        ('condo', 'Condo'),
         ('townhouse', 'Townhouse'),
-        ('duplex', 'Duplex'),
-        ('loft', 'Loft'),
-        ('studio', 'Studio'),
-        ('cottage', 'Cottage'),
-        ('cabin', 'Cabin'),
-        ('mobile_home', 'Mobile Home'),
-        ('bungalow', 'Bungalow'),
-        ('villa', 'Villa'),
-        ('mansion', 'Mansion'),
-        ('farmhouse', 'Farmhouse'),
         ('other', 'Other'),
     ]
 
-    PET_TYPE_CHOICES = ['dog', 'cat', 'bird', 'fish', 'reptile', 'other', 'none']
+    PET_TYPE_CHOICES = [
+        ('dog', 'Dog'), ('cat', 'Cat'), ('bird', 'Bird'), 
+        ('fish', 'Fish'), ('reptile', 'Reptile'), ('other', 'Other'), ('none', 'None')
+    ]
 
     #Foreign key to cusomter_id
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='homes')
@@ -188,8 +185,6 @@ class Home(models.Model):
     pets = models.JSONField(default=dict, blank=False, null=False)
     kids = models.CharField(max_length=2, blank=False, null=False)
 
-    # Outdoor picture, special instructions
-    outdoor_image = models.ImageField(upload_to='home_images/', null=False, blank=False)
     special_instructions = models.TextField(max_length=1000, blank=True, null=True)
 
     
@@ -202,20 +197,43 @@ class Home(models.Model):
             if not isinstance(count, int) or count < 0:
                 raise ValidationError(f"Count for {pet} should be a non-negative integer.")
             
+#------------------------------------------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------------------------------------
-
-# Model for storing indoor images of the home if customer would like to
-class Indoor_Home_Image(models.Model):
-    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='home_images/')
-    caption = models.CharField(max_length=100, blank=True, null=True)  # Optional caption
+class Service(models.Model):
+    # Service fields
+    name = models.CharField(max_length=50)
+    description = models.TextField()
+    price_range = models.DecimalField(max_digits=6, decimal_places=2)
+    estimated_duration = models.DurationField()
 
     def __str__(self):
-        return f"Image for {self.home.address}"
-    
-#---------------------------------------------------------------------------------------------------------
+        return f"{self.name} - ${self.price_range} ({self.estimated_duration})"
 
+#------------------------------------------------------------------------------------------------------------
+
+class Task(models.Model):
+    # Foreign key to a Job model (assuming Job model exists)
+    job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name='task_items')
+
+    # Basic fields
+    name = models.CharField(max_length=50)
+    description = models.TextField()
+    status = models.CharField(max_length=15)
+    
+    # Optional fields
+    duration = models.DurationField(null=True, blank=True)  # Duration field for time intervals
+    price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    # Notes fields
+    service_provider_notes = models.TextField()
+    customer_notes = models.TextField()
+
+    # Optional pictures field using ManyToMany with an Image model
+    # pictures = models.ManyToManyField('Image', blank=True, related_name='tasks')  # Optional field
+
+    def __str__(self):
+        return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
+#---------------------------------------------------------------------------------------------------------
 
 class Job(models.Model):
 
@@ -229,7 +247,7 @@ class Job(models.Model):
 
     # Foreign key relationships with related name 'jobs'
     customer = models.ForeignKey(Customer, related_name='jobs', on_delete=models.CASCADE)
-    cleaner = models.ForeignKey(Cleaner, related_name='jobs', on_delete=models.SET_NULL, null=True)
+    service_provider = models.ForeignKey(Service_Provider, related_name='jobs', on_delete=models.SET_NULL, null=True)
     home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
 
     # Status and schedule fields
@@ -244,11 +262,51 @@ class Job(models.Model):
     special_requests = models.TextField(max_length=500, null=True, blank=True)
 
     # Need Service and Task models before activating these
-    # services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
-    # tasks = models.ManyToManyField(Task, related_name='jobs')  # Many-to-many with Task
+    services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
+    tasks = models.ManyToManyField(Task, related_name='job_tasks')  # Many-to-many with Task
 
     def __str__(self):
-        return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.cleaner}"
+        return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.service_provider}"
+    
+#------------------------------------------------------------------------------------------------------    
+
+class Availability(models.Model):
+    DAYS_OF_WEEK = [
+        ('monday', 'Monday'),
+        ('tuesday', 'Tuesday'),
+        ('wednesday', 'Wednesday'),
+        ('thursday', 'Thursday'),
+        ('friday', 'Friday'),
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
+    ]
+
+    service_provider_id = models.ForeignKey(Service_Provider, on_delete=models.CASCADE)
+    day_of_week = models.CharField(max_length=10, choices=DAYS_OF_WEEK)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.service_provider_id} available on {self.day_of_week} from {self.start_time} to {self.end_time}"
+
+#---------------------------------------------------------------------------------------------------------
+
+class Payment(models.Model):
+    # Foreign key fields assuming `Job` and `Customer` models exist
+    job = models.ForeignKey('Job', on_delete=models.CASCADE, null=True, related_name='payments')
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='payments')
+    
+    # Payment fields/ amount made decimal field which allows control over the number of digits and decimal places.
+    method = models.CharField(max_length=25)
+    status = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=6, decimal_places=2)
+    date = models.DateField()
+
+    def __str__(self):
+        return f"Payment(id={self.id}, job_id={self.job.id}, customer_id={self.customer.id}, " \
+               f"method='{self.method}', status='{self.status}', amount={self.amount}, date={self.date})"
+    
+
     
 #---------------------------------------------------------------------------------------------------------
 
@@ -261,7 +319,7 @@ class Review(models.Model):
     reviewee_role = models.CharField(max_length=10)
     review_text = models.TextField()
     review_date = models.DateField()
-    rating = models.IntegerField()
+    rating = models.FloatField([MinValueValidator(1.0), MaxValueValidator(5.0)], blank=False, null=False)
 
     def __str__(self):
         return f"Review by {self.reviewer.username} for {self.reviewee.username} - Rating: {self.rating}"
@@ -270,10 +328,10 @@ class Review(models.Model):
         """Check if the review rating is positive (4 or 5)."""
         return self.rating >= 4
 
-    #---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
 
     # PaymentMethod model
-class PaymentMethod(models.Model):
+class Payment_Method(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="payment_methods")
     type = models.CharField(max_length=50)
     card_number = models.CharField(max_length=255)  # Store hashed
@@ -293,10 +351,12 @@ class PaymentMethod(models.Model):
         from datetime import datetime
         return (self.exp_year < datetime.now().year) or (self.exp_year == datetime.now().year and self.exp_month < datetime.now().month)
 
-    #---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+
     # BankAccount model
-class BankAccount(models.Model):
-    cleaner = models.ForeignKey(Cleaner, on_delete=models.CASCADE, related_name="bank_accounts")
+class Bank_Account(models.Model):
+    
+    service_provider = models.ForeignKey(Service_Provider, on_delete=models.CASCADE, related_name="bank_accounts")
     bank = models.CharField(max_length=100)
     account_last_four = models.CharField(max_length=4)
     account_type = models.CharField(max_length=50)
@@ -312,29 +372,70 @@ class BankAccount(models.Model):
     def is_default(self):
         """Check if this bank account is the default one."""
         return self.default
+    
+#---------------------------------------------------------------------------------------------------------
 
-    #---------------------------------------------------------------------------------------------------------
-    # Chat model
-class Chat(models.Model):
-    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customer_chats")
-    cleaner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cleaner_chats")
+# class Ticket(models.Model):
 
-    def __str__(self):
-        return f"Chat between {self.customer.username} and {self.cleaner.username}"
+#     customer = Customer
+#     cleaner = Cleaner
+     
+#     ROLE_CHOICES = (
+#         ('customer', 'Customer'),
+#         ('cleaner', 'Cleaner'),
+#     )
 
-    #---------------------------------------------------------------------------------------------------------
-    # Message model
-class Message(models.Model):
-    chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name="messages")
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
-    message = models.TextField()
-    date = models.DateField()
-    time = models.TimeField()
+#     # id creates a universal unique identifier that guarantees a unique ID for each ticket.
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+#     # Account_id as an integer field
+#     account_id = models.ForeignKey(Account, on_delete=models.CASCADE) 
 
-    def __str__(self):
-        return f"Message from {self.sender.username} to {self.receiver.username} on {self.date} at {self.time}"
+#     # Role as an integer field
+#     role = models.IntegerField(choices=ROLE_CHOICES)
 
-    def is_sent_by(self, user):
-        """Check if the message was sent by a specific user."""
-        return self.sender == user
+#     # Ticket content as a text field
+#     ticket_content = models.TextField()
+
+#     # Date and time fields
+#     date = models.DateField()
+#     time = models.TimeField()
+
+#     # Status as a character field with max length of 10
+#     status = models.CharField(max_length=10)
+
+    
+#     def __str__(self):
+#         return f"Ticket {self.id} - Role: {self.ROLE_CHOICES()} - Status: {self.status}"
+
+
+#     #---------------------------------------------------------------------------------------------------------
+#     # Chat model
+# class Chat(models.Model):
+#     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customer_chats")
+#     cleaner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cleaner_chats")
+
+#     def __str__(self):
+#         return f"Chat between {self.customer.username} and {self.cleaner.username}"
+
+#     #---------------------------------------------------------------------------------------------------------
+#     # Message model
+# class Message(models.Model):
+#     chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name="messages")
+#     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+#     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+#     message = models.TextField()
+#     date = models.DateField()
+#     time = models.TimeField()
+
+#     def __str__(self):
+#         return f"Message from {self.sender.username} to {self.receiver.username} on {self.date} at {self.time}"
+
+#     def is_sent_by(self, user):
+#         """Check if the message was sent by a specific user."""
+# <<<<<<< HEAD
+#         return self.sender == user
+# >>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d
+# =======
+#         return self.sender == user
+# >>>>>>> 009b9e8f951ccc9ebb55473aadcafd1bb40d394d

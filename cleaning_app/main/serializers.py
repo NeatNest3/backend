@@ -73,10 +73,11 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
 
+    job = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Task
-        fields = ('__all__')
-
+        fields = '__all__'
 
 class JobSerializer(serializers.ModelSerializer):
 
@@ -86,13 +87,14 @@ class JobSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
         fields = [
-            'customer', 'service_provider', 'home', 'status', 'date', 'start_time', 
-            'end_time', 'total_cost', 'payment_made', 'special_requests', 'rooms', 'tasks'
-        ]
+             'customer', 'service_provider', 'home', 'status', 'date', 'start_time', 
+             'end_time', 'total_cost', 'payment_made', 'special_requests', 'rooms', 'tasks'
+         ]
+    
 
     def create(self, validated_data):
         rooms_data = validated_data.pop('rooms')
-        tasks_data = validated_data.pop('tasks')
+        tasks_data = validated_data.pop('tasks', [])
         job = Job.objects.create(**validated_data)
 
         job.rooms.set(rooms_data)
@@ -101,19 +103,6 @@ class JobSerializer(serializers.ModelSerializer):
             Task.objects.create(job=job, **task_data)
 
         return job
-
-    def update(self, instance, validated_data):
-        tasks_data = validated_data.pop('tasks', [])
-        instance = super().update(instance, validated_data)
-
-        # Clear and reset tasks if included in the update
-        if tasks_data:
-            instance.tasks.clear()
-            for task_data in tasks_data:
-                Task.objects.create(job=instance, **task_data)
-
-        return instance
-
 
 class AvailabilitySerializer(serializers.ModelSerializer):
 
@@ -134,9 +123,6 @@ class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         fields = ('__all__')
-
-
-
 
 
 class ReviewSerializer(serializers.ModelSerializer):

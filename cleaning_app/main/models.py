@@ -208,6 +208,9 @@ class Room(models.Model):
     name = models.CharField(max_length=50, null=False, blank=False)
     notes = models.TextField(blank=True, null=True)
 
+    def __str__(self):
+        return f"{self.home.home_name} - {self.type} - {self.name}"
+
 #------------------------------------------------------------------------------------------------------------
 
 class Service(models.Model):
@@ -238,6 +241,8 @@ class Job(models.Model):
     home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
 
     rooms = models.ManyToManyField(Room, related_name="jobs")
+    services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
+    tasks = models.ManyToManyField('Task', related_name='job_tasks') # Many-to-many with Task
 
     # Status and schedule fields
     status = models.CharField(max_length=20, choices=STATUS_TYPE_CHOICES, blank=False, null=False)
@@ -250,9 +255,6 @@ class Job(models.Model):
     payment_made = models.BooleanField(default=False)
     special_requests = models.TextField(max_length=500, null=True, blank=True)
 
-    # Need Service and Task models before activating these
-    services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
-    tasks = models.ManyToManyField('Task', related_name='job_tasks')  # Many-to-many with Task
 
     def __str__(self):
         return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.service_provider}"
@@ -261,7 +263,7 @@ class Job(models.Model):
 
 class Task(models.Model):
     # Foreign key to a Job model 
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='task_items')
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='task_jobs')
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tasks', default='General')
 
     # Basic fields
@@ -274,8 +276,8 @@ class Task(models.Model):
     price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     
     # Notes fields
-    service_provider_notes = models.TextField()
-    customer_notes = models.TextField()
+    service_provider_notes = models.TextField(blank=True, null=True)
+    customer_notes = models.TextField(blank=True, null=True)
 
 
 

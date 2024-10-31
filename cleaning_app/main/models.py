@@ -197,81 +197,6 @@ class Home(models.Model):
             if not isinstance(count, int) or count < 0:
                 raise ValidationError(f"Count for {pet} should be a non-negative integer.")
             
-
-#---------------------------------------------------------------------------------------------------------
-
-class Job(models.Model):
-
-    STATUS_TYPE_CHOICES = [
-        ('pending', 'Pending'),
-        ('booked', 'Booked'),
-        ('active', 'Active'),
-        ('cancelled', 'Cancelled'),
-        ('completed', 'Completed')
-    ]
-
-    # Foreign key relationships with related name 'jobs'
-    customer = models.ForeignKey(Customer, related_name='jobs', on_delete=models.CASCADE)
-    cleaner = models.ForeignKey(Service_Provider, related_name='jobs', on_delete=models.SET_NULL, null=True)
-    home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
-
-    # Status and schedule fields
-    status = models.CharField(max_length=20, choices=STATUS_TYPE_CHOICES, blank=False, null=False)
-    date = models.DateField(blank=False, null=False)
-    start_time = models.TimeField(blank=False, null=False)
-    end_time = models.TimeField(blank=False, null=False)
-
-    # Cost, Payment, Special Requests
-    total_cost = models.DecimalField(max_digits=6, decimal_places=2, blank=False, null=False)
-    payment_made = models.BooleanField(default=False)
-    special_requests = models.TextField(max_length=500, null=True, blank=True)
-
-    # Need Service and Task models before activating these
-    # services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
-    # tasks = models.ManyToManyField(Task, related_name='jobs')  # Many-to-many with Task
-
-    def __str__(self):
-        return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.cleaner}"
-    
-#------------------------------------------------------------------------------------------------------    
-
-class Availability(models.Model):
-    DAYS_OF_WEEK = [
-        ('monday', 'Monday'),
-        ('tuesday', 'Tuesday'),
-        ('wednesday', 'Wednesday'),
-        ('thursday', 'Thursday'),
-        ('friday', 'Friday'),
-        ('saturday', 'Saturday'),
-        ('sunday', 'Sunday'),
-    ]
-
-    id = models.AutoField(primary_key=True)
-    cleaner_id = models.ForeignKey(Service_Provider, on_delete=models.CASCADE)
-    day_of_week = models.CharField(max_length=10, choices=DAYS_OF_WEEK)
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-
-    def __str__(self):
-        return f"{self.cleaner_id} available on {self.day_of_week} from {self.start_time} to {self.end_time}"
-
-#---------------------------------------------------------------------------------------------------------
-
-class Payment(models.Model):
-    # Foreign key fields assuming `Job` and `Customer` models exist
-    service = models.ForeignKey('Service', on_delete=models.CASCADE, related_name='payments')
-    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='payments')
-    
-    # Payment fields/ amount made decimal field which allows control over the number of digits and decimal places.
-    method = models.CharField(max_length=25)
-    status = models.CharField(max_length=20)
-    amount = models.DecimalField(max_digits=6, decimal_places=2)
-    date = models.DateField()
-
-    def __str__(self):
-        return f"Payment(id={self.id}, service_id={self.service.id}, customer_id={self.customer.id}, " \
-               f"method='{self.method}', status='{self.status}', amount={self.amount}, date={self.date})"
-    
 #------------------------------------------------------------------------------------------------------------
 
 class Service(models.Model):
@@ -288,7 +213,7 @@ class Service(models.Model):
 
 class Task(models.Model):
     # Foreign key to a Job model (assuming Job model exists)
-    job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name='tasks')
+    job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name='task_items')
 
     # Basic fields
     name = models.CharField(max_length=50)
@@ -300,7 +225,7 @@ class Task(models.Model):
     price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     
     # Notes fields
-    cleaner_notes = models.TextField()
+    service_provider_notes = models.TextField()
     customer_notes = models.TextField()
 
     # Optional pictures field using ManyToMany with an Image model
@@ -308,6 +233,80 @@ class Task(models.Model):
 
     def __str__(self):
         return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
+#---------------------------------------------------------------------------------------------------------
+
+class Job(models.Model):
+
+    STATUS_TYPE_CHOICES = [
+        ('pending', 'Pending'),
+        ('booked', 'Booked'),
+        ('active', 'Active'),
+        ('cancelled', 'Cancelled'),
+        ('completed', 'Completed')
+    ]
+
+    # Foreign key relationships with related name 'jobs'
+    customer = models.ForeignKey(Customer, related_name='jobs', on_delete=models.CASCADE)
+    service_provider = models.ForeignKey(Service_Provider, related_name='jobs', on_delete=models.SET_NULL, null=True)
+    home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
+
+    # Status and schedule fields
+    status = models.CharField(max_length=20, choices=STATUS_TYPE_CHOICES, blank=False, null=False)
+    date = models.DateField(blank=False, null=False)
+    start_time = models.TimeField(blank=False, null=False)
+    end_time = models.TimeField(blank=False, null=False)
+
+    # Cost, Payment, Special Requests
+    total_cost = models.DecimalField(max_digits=6, decimal_places=2, blank=False, null=False)
+    payment_made = models.BooleanField(default=False)
+    special_requests = models.TextField(max_length=500, null=True, blank=True)
+
+    # Need Service and Task models before activating these
+    services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
+    tasks = models.ManyToManyField(Task, related_name='job_tasks')  # Many-to-many with Task
+
+    def __str__(self):
+        return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.service_provider}"
+    
+#------------------------------------------------------------------------------------------------------    
+
+class Availability(models.Model):
+    DAYS_OF_WEEK = [
+        ('monday', 'Monday'),
+        ('tuesday', 'Tuesday'),
+        ('wednesday', 'Wednesday'),
+        ('thursday', 'Thursday'),
+        ('friday', 'Friday'),
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
+    ]
+
+    service_provider_id = models.ForeignKey(Service_Provider, on_delete=models.CASCADE)
+    day_of_week = models.CharField(max_length=10, choices=DAYS_OF_WEEK)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.service_provider_id} available on {self.day_of_week} from {self.start_time} to {self.end_time}"
+
+#---------------------------------------------------------------------------------------------------------
+
+class Payment(models.Model):
+    # Foreign key fields assuming `Job` and `Customer` models exist
+    job = models.ForeignKey('Job', on_delete=models.CASCADE, null=True, related_name='payments')
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='payments')
+    
+    # Payment fields/ amount made decimal field which allows control over the number of digits and decimal places.
+    method = models.CharField(max_length=25)
+    status = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=6, decimal_places=2)
+    date = models.DateField()
+
+    def __str__(self):
+        return f"Payment(id={self.id}, job_id={self.job.id}, customer_id={self.customer.id}, " \
+               f"method='{self.method}', status='{self.status}', amount={self.amount}, date={self.date})"
+    
+
     
 #---------------------------------------------------------------------------------------------------------
 
@@ -357,7 +356,7 @@ class Payment_Method(models.Model):
     # BankAccount model
 class Bank_Account(models.Model):
     
-    cleaner = models.ForeignKey(Service_Provider, on_delete=models.CASCADE, related_name="bank_accounts")
+    service_provider = models.ForeignKey(Service_Provider, on_delete=models.CASCADE, related_name="bank_accounts")
     bank = models.CharField(max_length=100)
     account_last_four = models.CharField(max_length=4)
     account_type = models.CharField(max_length=50)
@@ -375,6 +374,13 @@ class Bank_Account(models.Model):
         return self.default
     
 #---------------------------------------------------------------------------------------------------------
+
+class Image(models.Model):
+    image_url = models.URLField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Image {self.id}'
 
 # class Ticket(models.Model):
 

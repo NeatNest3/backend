@@ -1,7 +1,7 @@
-from rest_framework import generics
+
 from .models import *
 from .serializers import *
-
+from django.http import HttpResponse
 from rest_framework import generics
 from .models import User, Customer, Specialty, Service_Provider, Home, Job, Availability, Payment, Service, Task, Review, Payment_Method, Bank_Account
 from .serializers import (
@@ -10,6 +10,18 @@ from .serializers import (
     ServiceSerializer, TaskSerializer, ReviewSerializer, Payment_MethodSerializer,
     Bank_AccountSerializer
 )
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Image
+import firebase_admin
+from firebase_admin import storage, credentials
+import os
+from.models import Image
+from django.urls import reverse
+
+def homepage(request):
+    return render(request, 'main/index.html')  # Use 'appname/filename.html'
 
 #---------------------------------------------------------------------------------------------------------
 # User Views
@@ -140,3 +152,24 @@ class Bank_AccountList(generics.ListCreateAPIView):
 class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Bank_Account.objects.all()
     serializer_class = Bank_AccountSerializer
+
+#---------------------------------------------------------------------------------------------------------
+@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
+def upload_image(request):
+    if request.method == 'POST':
+        file = request.FILES['image']
+        # Get the Firebase storage bucket
+        bucket = storage.bucket()
+        # Create a blob for the uploaded file
+        blob = bucket.blob(f'images/{file.name}')
+        blob.upload_from_file(file, content_type=file.content_type)
+
+        # Make the file publicly accessible
+        blob.make_public()
+
+        # Store the image URL in the database (optional)
+        image = Image.objects.create(image_url=blob.public_url)
+
+        return HttpResponse("Image Uploaded!")
+
+    return render(request, 'main/upload_image.html')

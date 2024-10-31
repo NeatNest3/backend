@@ -11,8 +11,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-import firebase_admin
-from firebase_admin import credentials 
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -139,12 +137,4 @@ try:
 except ImportError:
     pass
 
-# Path to your Firebase service account key
-cred = credentials.Certificate(r'C:\Users\PC1\Documents\coding_temple\project\backend\cleaning_app\credentials\neatnest-c0b9b-firebase-adminsdk-ofdpc-5b2105e210.json')
-firebase_admin.initialize_app(cred, {
-    'storageBucket': 'neatnest-c0b9b.appspot.com'})
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# defining the path to the credentials file
-CREDENTIALS_PATH = os.path.join(BASE_DIR, 'credentials', 'neatnest-c0b9b-firebase-adminsdk-ofdpc-5b2105e210.json')

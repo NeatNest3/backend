@@ -29,9 +29,13 @@
 
         path("service-providers/&lt;int:pk&gt;/", Service_ProviderDetails.as_view(), name='service-provider-details'),
 
+        path("service-providers/&lt;int:pk&gt;/job-history", JobHistoryList.as_view(), name='service-provider-job-history'),
+
         path("homes/", HomeList.as_view(), name="home-list"),
 
         path("homes/&lt;int:pk&gt;/", HomeDetails.as_view(), name="home-details"),
+
+        path("homes/&lt;int:pk&gt;/job-history", HomeHistoryList.as_view(), name='home-job-history'),
 
         path("rooms/", RoomList.as_view(), name='room-list'),
 

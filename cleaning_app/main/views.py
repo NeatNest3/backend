@@ -3,13 +3,7 @@ from .models import *
 from .serializers import *
 from django.http import HttpResponse
 from rest_framework import generics
-from .models import User, Customer, Specialty, Service_Provider, Home, Job, Availability, Payment, Service, Task, Review, Payment_Method, Bank_Account
-from .serializers import (
-    UserSerializer, CustomerSerializer, SpecialtySerializer, Service_ProviderSerializer,
-    HomeSerializer, RoomSerializer, JobSerializer, AvailabilitySerializer, PaymentSerializer,
-    ServiceSerializer, TaskSerializer, ReviewSerializer, Payment_MethodSerializer,
-    Bank_AccountSerializer
-)
+from .serializers import *
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -64,6 +58,7 @@ class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views
+
 class Service_ProviderList(generics.ListCreateAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
@@ -81,8 +76,18 @@ class Service_ProviderDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
 
+
+class JobHistoryList(generics.ListAPIView):
+    serializer_class = JobSerializer
+
+    def get_queryset(self):
+        service_provider_id = self.kwargs['pk']
+        # Filter jobs by the cleaner id and order by date in descending order
+        return Job.objects.filter(service_provider=service_provider_id).order_by('-date')
+
 #---------------------------------------------------------------------------------------------------------
 # Home Views
+
 class HomeList(generics.ListCreateAPIView):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
@@ -90,6 +95,13 @@ class HomeList(generics.ListCreateAPIView):
 class HomeDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
+
+class HomeHistoryList(generics.ListAPIView):
+    serializer_class = JobSerializer
+
+    def get_queryset(self):
+        home_id = self.kwargs['pk']
+        return Job.objects.filter(home=home_id).order_by('-date')
 
 #---------------------------------------------------------------------------------------------------------
 

@@ -15,7 +15,6 @@ import firebase_admin
 from firebase_admin import credentials 
 import os
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,6 +29,8 @@ SECRET_KEY = 'django-insecure-g4#_*pbb@omzq$rc3r=@7b#vaa2l+ahrqnas*p^o28%u$g%!2%
 DEBUG = True
 
 ALLOWED_HOSTS = [ ]
+
+AUTH_USER_MODEL = 'main.User'
 
 
 # Application definition

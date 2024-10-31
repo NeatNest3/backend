@@ -6,7 +6,7 @@ from rest_framework import generics
 from .models import User, Customer, Specialty, Service_Provider, Home, Job, Availability, Payment, Service, Task, Review, Payment_Method, Bank_Account
 from .serializers import (
     UserSerializer, CustomerSerializer, SpecialtySerializer, Service_ProviderSerializer,
-    HomeSerializer, JobSerializer, AvailabilitySerializer, PaymentSerializer,
+    HomeSerializer, RoomSerializer, JobSerializer, AvailabilitySerializer, PaymentSerializer,
     ServiceSerializer, TaskSerializer, ReviewSerializer, Payment_MethodSerializer,
     Bank_AccountSerializer
 )
@@ -39,6 +39,15 @@ class CustomerList(generics.ListCreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
+    def perform_create(self, serializer):
+        # Here, 'user' should be included in the validated data sent from the frontend.
+        # Ensure that the user ID is provided in the request data.
+        user = self.request.data.get('user')
+        if user:
+            serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
+        else:
+            raise serializers.ValidationError({"user": "User ID is required to create a customer."})
+
 class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -59,6 +68,15 @@ class Service_ProviderList(generics.ListCreateAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
 
+    def perform_create(self, serializer):
+        # Here, 'user' should be included in the validated data sent from the frontend.
+        # Ensure that the user ID is provided in the request data.
+        user = self.request.data.get('user')
+        if user:
+            serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
+        else:
+            raise serializers.ValidationError({"user": "User ID is required to create a customer."})
+
 class Service_ProviderDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
@@ -74,6 +92,17 @@ class HomeDetails(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = HomeSerializer
 
 #---------------------------------------------------------------------------------------------------------
+
+class RoomList(generics.ListCreateAPIView):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
+
+class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
+
+#---------------------------------------------------------------------------------------------------------
+
 # Job Views
 class JobList(generics.ListCreateAPIView):
     queryset = Job.objects.all()

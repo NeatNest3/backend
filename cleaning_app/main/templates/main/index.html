@@ -33,6 +33,10 @@
 
         path("homes/&lt;int:pk&gt;/", HomeDetails.as_view(), name="home-details"),
 
+        path("rooms/", RoomList.as_view(), name='room-list'),
+
+        path("rooms/&lt;int:pk&gt;/", RoomDetails.as_view(), name='room-details'),
+
         path("jobs/", JobList.as_view(), name="job-list"),
 
         path("jobs/&lt;int:pk&gt;/", JobDetails.as_view(), name="job-details"),

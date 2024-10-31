@@ -32,16 +32,29 @@ class SpecialtySerializer(serializers.ModelSerializer):
 
 
 class Service_ProviderSerializer(serializers.ModelSerializer):
-
+    specialties = serializers.PrimaryKeyRelatedField(
+        queryset = Specialty.objects.all(), many=True
+    )
     class Meta:
         model = Service_Provider
         fields = ('__all__')
 
     def create(self, validated_data):
+        # Retrieve the user and specialties data from validated_data
         user = validated_data.get('user')
+        specialties = validated_data.pop('specialties', [])
+
+        # Check if the user is provided
         if not user:
-            raise serializers.ValidationError("User ID is required to create a cleaner.")
-        return Service_Provider.objects.create(**validated_data)
+            raise serializers.ValidationError("User ID is required to create a service provider.")
+
+        # Create the Service_Provider instance without specialties
+        service_provider = Service_Provider.objects.create(**validated_data)
+
+        # Set the specialties using .set() method to establish the many-to-many relationship
+        service_provider.specialties.set(specialties)
+        
+        return service_provider
 
 
 class HomeSerializer(serializers.ModelSerializer):
@@ -89,6 +102,17 @@ class JobSerializer(serializers.ModelSerializer):
 
         return job
 
+    def update(self, instance, validated_data):
+        tasks_data = validated_data.pop('tasks', [])
+        instance = super().update(instance, validated_data)
+
+        # Clear and reset tasks if included in the update
+        if tasks_data:
+            instance.tasks.clear()
+            for task_data in tasks_data:
+                Task.objects.create(job=instance, **task_data)
+
+        return instance
 
 
 class AvailabilitySerializer(serializers.ModelSerializer):

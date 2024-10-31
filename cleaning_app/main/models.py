@@ -189,7 +189,7 @@ class Home(models.Model):
 
     
     def __str__(self):
-        return f"{self.home_name} - {self.address_line_one}, {self.city}"
+        return f"{self.customer.user.first_name} {self.customer.user.last_name}: {self.home_name} - {self.address_line_one}, {self.city}"
 
     def clean(self):
         super().clean()
@@ -252,7 +252,7 @@ class Job(models.Model):
 
     # Need Service and Task models before activating these
     services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
-    # tasks = models.ManyToManyField(Task, related_name='job_tasks')  # Many-to-many with Task
+    tasks = models.ManyToManyField('Task', related_name='job_tasks')  # Many-to-many with Task
 
     def __str__(self):
         return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.service_provider}"

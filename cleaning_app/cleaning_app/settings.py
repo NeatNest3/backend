@@ -28,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = [ ]
 
+AUTH_USER_MODEL = 'main.User'
+
 
 # Application definition
 
@@ -135,3 +137,7 @@ try:
 except ImportError:
     pass
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1135de4400e4789d753bb58188dc53cb3c4cd8ae

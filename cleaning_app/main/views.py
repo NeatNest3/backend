@@ -3,13 +3,7 @@ from .models import *
 from .serializers import *
 from django.http import HttpResponse
 from rest_framework import generics
-from .models import User, Customer, Specialty, Service_Provider, Home, Job, Availability, Payment, Service, Task, Review, Payment_Method, Bank_Account
-from .serializers import (
-    UserSerializer, CustomerSerializer, SpecialtySerializer, Service_ProviderSerializer,
-    HomeSerializer, JobSerializer, AvailabilitySerializer, PaymentSerializer,
-    ServiceSerializer, TaskSerializer, ReviewSerializer, Payment_MethodSerializer,
-    Bank_AccountSerializer
-)
+from .serializers import *
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -39,6 +33,15 @@ class CustomerList(generics.ListCreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
+    def perform_create(self, serializer):
+        # Here, 'user' should be included in the validated data sent from the frontend.
+        # Ensure that the user ID is provided in the request data.
+        user = self.request.data.get('user')
+        if user:
+            serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
+        else:
+            raise serializers.ValidationError({"user": "User ID is required to create a customer."})
+
 class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -55,16 +58,36 @@ class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views
+
 class Service_ProviderList(generics.ListCreateAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
+
+    def perform_create(self, serializer):
+        # Here, 'user' should be included in the validated data sent from the frontend.
+        # Ensure that the user ID is provided in the request data.
+        user = self.request.data.get('user')
+        if user:
+            serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
+        else:
+            raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
 class Service_ProviderDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
 
+
+class JobHistoryList(generics.ListAPIView):
+    serializer_class = JobSerializer
+
+    def get_queryset(self):
+        service_provider_id = self.kwargs['pk']
+        # Filter jobs by the cleaner id and order by date in descending order
+        return Job.objects.filter(service_provider=service_provider_id).order_by('-date')
+
 #---------------------------------------------------------------------------------------------------------
 # Home Views
+
 class HomeList(generics.ListCreateAPIView):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
@@ -73,7 +96,25 @@ class HomeDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
 
+class HomeHistoryList(generics.ListAPIView):
+    serializer_class = JobSerializer
+
+    def get_queryset(self):
+        home_id = self.kwargs['pk']
+        return Job.objects.filter(home=home_id).order_by('-date')
+
 #---------------------------------------------------------------------------------------------------------
+
+class RoomList(generics.ListCreateAPIView):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
+
+class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
+
+#---------------------------------------------------------------------------------------------------------
+
 # Job Views
 class JobList(generics.ListCreateAPIView):
     queryset = Job.objects.all()

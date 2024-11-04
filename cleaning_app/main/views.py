@@ -170,6 +170,6 @@ def upload_image(request):
         # Store the image URL in the database (optional)
         image = Image.objects.create(image_url=blob.public_url)
 
-        return HttpResponse("Image Uploaded!")
+        return HttpResponse("Image Successfully Uploaded!")
 
     return render(request, 'main/upload_image.html')

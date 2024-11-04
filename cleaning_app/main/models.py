@@ -188,6 +188,8 @@ class Home(models.Model):
     special_instructions = models.TextField(max_length=1000, blank=True, null=True)
 
     
+    def __str__(self):
+        return f"{self.customer.user.first_name} {self.customer.user.last_name}: {self.home_name} - {self.address_line_one}, {self.city}"
 
     def clean(self):
         super().clean()
@@ -197,6 +199,18 @@ class Home(models.Model):
             if not isinstance(count, int) or count < 0:
                 raise ValidationError(f"Count for {pet} should be a non-negative integer.")
             
+#------------------------------------------------------------------------------------------------------------
+
+class Room(models.Model):
+
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name='rooms')
+    type = models.CharField(max_length=50, blank=False, null=False)
+    name = models.CharField(max_length=50, null=False, blank=False)
+    notes = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.home.home_name} - {self.type} - {self.name}"
+
 #------------------------------------------------------------------------------------------------------------
 
 class Service(models.Model):
@@ -210,30 +224,6 @@ class Service(models.Model):
         return f"{self.name} - ${self.price_range} ({self.estimated_duration})"
 
 #------------------------------------------------------------------------------------------------------------
-
-class Task(models.Model):
-    # Foreign key to a Job model (assuming Job model exists)
-    job = models.ForeignKey('Job', on_delete=models.CASCADE, related_name='task_items')
-
-    # Basic fields
-    name = models.CharField(max_length=50)
-    description = models.TextField()
-    status = models.CharField(max_length=15)
-    
-    # Optional fields
-    duration = models.DurationField(null=True, blank=True)  # Duration field for time intervals
-    price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    
-    # Notes fields
-    service_provider_notes = models.TextField()
-    customer_notes = models.TextField()
-
-    # Optional pictures field using ManyToMany with an Image model
-    # pictures = models.ManyToManyField('Image', blank=True, related_name='tasks')  # Optional field
-
-    def __str__(self):
-        return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
-#---------------------------------------------------------------------------------------------------------
 
 class Job(models.Model):
 
@@ -250,6 +240,10 @@ class Job(models.Model):
     service_provider = models.ForeignKey(Service_Provider, related_name='jobs', on_delete=models.SET_NULL, null=True)
     home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
 
+    rooms = models.ManyToManyField(Room, related_name="jobs")
+    services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
+    tasks = models.ManyToManyField('Task', related_name='job_tasks') # Many-to-many with Task
+
     # Status and schedule fields
     status = models.CharField(max_length=20, choices=STATUS_TYPE_CHOICES, blank=False, null=False)
     date = models.DateField(blank=False, null=False)
@@ -261,12 +255,35 @@ class Job(models.Model):
     payment_made = models.BooleanField(default=False)
     special_requests = models.TextField(max_length=500, null=True, blank=True)
 
-    # Need Service and Task models before activating these
-    services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
-    tasks = models.ManyToManyField(Task, related_name='job_tasks')  # Many-to-many with Task
 
     def __str__(self):
         return f"Job for {self.customer} on {self.date} at {self.start_time}, Cleaner: {self.service_provider}"
+    
+#---------------------------------------------------------------------------------------------------------
+
+class Task(models.Model):
+    # Foreign key to a Job model 
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='task_jobs')
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tasks', default='General')
+
+    # Basic fields
+    name = models.CharField(max_length=50)
+    description = models.TextField()
+    status = models.CharField(max_length=15)
+    
+    # Optional fields
+    duration = models.DurationField(null=True, blank=True)  # Duration field for time intervals
+    price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    # Notes fields
+    service_provider_notes = models.TextField(blank=True, null=True)
+    customer_notes = models.TextField(blank=True, null=True)
+
+
+
+    def __str__(self):
+        return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
+
     
 #------------------------------------------------------------------------------------------------------    
 
@@ -367,13 +384,20 @@ class Bank_Account(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Bank Account ({self.bank}) for {self.cleaner.username}"
+        return f"Bank Account ({self.bank}) for {self.service_provider.username}"
 
     def is_default(self):
         """Check if this bank account is the default one."""
         return self.default
     
 #---------------------------------------------------------------------------------------------------------
+
+class Image(models.Model):
+    image_url = models.URLField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Image {self.id}'
 
 # class Ticket(models.Model):
 

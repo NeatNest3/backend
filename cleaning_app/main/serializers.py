@@ -14,8 +14,15 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ('__all__')
+        fields = '__all__'
 
+    def create(self, validated_data):
+
+        user = validated_data.get('user')
+        if not user:
+            raise serializers.ValidationError("User ID is required to create a customer.")
+        
+        return super().create(validated_data)
 
 class SpecialtySerializer(serializers.ModelSerializer):
 
@@ -25,10 +32,29 @@ class SpecialtySerializer(serializers.ModelSerializer):
 
 
 class Service_ProviderSerializer(serializers.ModelSerializer):
-
+    specialties = serializers.PrimaryKeyRelatedField(
+        queryset = Specialty.objects.all(), many=True
+    )
     class Meta:
         model = Service_Provider
         fields = ('__all__')
+
+    def create(self, validated_data):
+        # Retrieve the user and specialties data from validated_data
+        user = validated_data.get('user')
+        specialties = validated_data.pop('specialties', [])
+
+        # Check if the user is provided
+        if not user:
+            raise serializers.ValidationError("User ID is required to create a service provider.")
+
+        # Create the Service_Provider instance without specialties
+        service_provider = Service_Provider.objects.create(**validated_data)
+
+        # Set the specialties using .set() method to establish the many-to-many relationship
+        service_provider.specialties.set(specialties)
+        
+        return service_provider
 
 
 class HomeSerializer(serializers.ModelSerializer):
@@ -38,12 +64,45 @@ class HomeSerializer(serializers.ModelSerializer):
         fields = ('__all__')
 
 
+class RoomSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Room
+        fields = ('__all__')
+
+
+class TaskSerializer(serializers.ModelSerializer):
+
+    job = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Task
+        fields = '__all__'
+
 class JobSerializer(serializers.ModelSerializer):
+
+    rooms = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), many=True)
+    tasks = TaskSerializer(many=True)
 
     class Meta:
         model = Job
-        fields = ('__all__')
+        fields = [
+             'customer', 'service_provider', 'home', 'status', 'date', 'start_time', 
+             'end_time', 'total_cost', 'payment_made', 'special_requests', 'rooms', 'tasks'
+         ]
+    
 
+    def create(self, validated_data):
+        rooms_data = validated_data.pop('rooms')
+        tasks_data = validated_data.pop('tasks', [])
+        job = Job.objects.create(**validated_data)
+
+        job.rooms.set(rooms_data)
+
+        for task_data in tasks_data:
+            Task.objects.create(job=job, **task_data)
+
+        return job
 
 class AvailabilitySerializer(serializers.ModelSerializer):
 
@@ -63,13 +122,6 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = ('__all__')
-
-
-class TaskSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Task
         fields = ('__all__')
 
 

@@ -16,6 +16,9 @@ Including another URLconf
 """
 from django.urls import path
 from .views import *
+from .views import upload_image
+from .import views
+
 
 app_name = 'main'
 
@@ -29,8 +32,12 @@ urlpatterns = [
     path("specialties/<int:pk>/", SpecialtyDetails.as_view(), name='specialty-details'),
     path("service-providers/", Service_ProviderList.as_view(), name='service-provider-list'),
     path("service-providers/<int:pk>/", Service_ProviderDetails.as_view(), name='service-provider-details'),
+    path("service-providers/<int:pk>/job-history", JobHistoryList.as_view(), name='service-provider-job-history'),
     path("homes/", HomeList.as_view(), name="home-list"),
     path("homes/<int:pk>/", HomeDetails.as_view(), name="home-details"),
+    path("homes/<int:pk>/job-history", HomeHistoryList.as_view(), name='home-job-history'),
+    path("rooms/", RoomList.as_view(), name='room-list'),
+    path("rooms/<int:pk>/", RoomDetails.as_view(), name='room-details'),
     path("jobs/", JobList.as_view(), name="job-list"),
     path("jobs/<int:pk>/", JobDetails.as_view(), name="job-details"),
     path("availabilities/", AvailabilityList.as_view(), name="availability-list"),
@@ -47,4 +54,6 @@ urlpatterns = [
     path("payment-methods/<int:pk>/", Payment_MethodDetails.as_view(), name="payment-method-details"),
     path("bank-accounts/", Bank_AccountList.as_view(), name="bank-account-list"),
     path("bank-accounts/<int:pk>/", Bank_AccountDetails.as_view(), name="bank-account-details"),
+    path('upload-image/', views.upload_image, name='upload_image'),
 ]
+

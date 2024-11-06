@@ -145,8 +145,12 @@ class Service_Provider(models.Model):
     state = models.CharField(max_length=50, blank=False, null=False)
     zipcode = models.CharField(max_length=10, blank=False, null=False)
 
+    #geolocation fields for filtering results by proximity
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
     def __str__(self):
-        return f'Service Provider: {self.user.username}'
+        return f'Service Provider: {self.user.username}, Rating: {self.rating}'
     
 #---------------------------------------------------------------------------------------------------------
 
@@ -160,8 +164,8 @@ class Home(models.Model):
     ]
 
     PET_TYPE_CHOICES = [
-        ('dog', 'Dog'), ('cat', 'Cat'), ('bird', 'Bird'), 
-        ('fish', 'Fish'), ('reptile', 'Reptile'), ('other', 'Other'), ('none', 'None')
+        ('dogs', 'Dogs'), ('cats', 'Cats'), ('birds', 'Birds'), 
+        ('fish', 'Fish'), ('reptiles', 'Reptiles')
     ]
 
     #Foreign key to cusomter_id
@@ -176,6 +180,10 @@ class Home(models.Model):
     city = models.CharField(max_length=50, blank=False, null=False)
     state = models.CharField(max_length=50, blank=False, null=False)
     zipcode = models.CharField(max_length=10, blank=False, null=False)
+
+    #geolocation fields for filtering results by proximity
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
     # Home Info
     size = models.CharField(max_length=50, blank=False, null=False)

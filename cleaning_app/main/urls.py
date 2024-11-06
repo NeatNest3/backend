@@ -17,7 +17,7 @@ Including another URLconf
 from django.urls import path
 from .views import *
 from .views import upload_image
-from .import views
+from . import views
 
 
 app_name = 'main'
@@ -33,6 +33,7 @@ urlpatterns = [
     path("service-providers/", Service_ProviderList.as_view(), name='service-provider-list'),
     path("service-providers/<int:pk>/", Service_ProviderDetails.as_view(), name='service-provider-details'),
     path("service-providers/<int:pk>/job-history", JobHistoryList.as_view(), name='service-provider-job-history'),
+    path("nearby-providers/<int:home_id>/", NearbyProvidersView.as_view(), name="nearby-providers"),
     path("homes/", HomeList.as_view(), name="home-list"),
     path("homes/<int:pk>/", HomeDetails.as_view(), name="home-details"),
     path("homes/<int:pk>/job-history", HomeHistoryList.as_view(), name='home-job-history'),

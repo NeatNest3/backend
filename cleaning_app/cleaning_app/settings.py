@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 import os
 import logging
 
@@ -29,7 +29,7 @@ LOGGING = {
     },
 }
 
-load_dotenv()
+#load_dotenv()
 LOCATIONIQ_API_KEY = os.getenv("LOCATIONIQ_API_KEY")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -157,7 +157,11 @@ try:
 except ImportError:
     pass
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 1135de4400e4789d753bb58188dc53cb3c4cd8ae
+AWS_ACCESS_KEY_ID = 'AKIA6NINTDPMKXSITS4F'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'cleaningapp'
+AWS_S3_REGION_NAME = 'us-east-2'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

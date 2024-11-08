@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
+
 ROOT_URLCONF = 'cleaning_app.cleaning_app.urls'
 # Allow all domains (for testing, use with caution in production)
 CORS_ALLOW_ALL_ORIGINS = True

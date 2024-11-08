@@ -1,10 +1,10 @@
-
+import boto3
 from .models import *
 from .serializers import *
 from django.http import HttpResponse
 from rest_framework import generics
 from .serializers import *
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Image
@@ -13,6 +13,9 @@ from firebase_admin import storage, credentials
 import os
 from.models import Image
 from django.urls import reverse
+from django.contrib.auth import get_user_model
+
+
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
@@ -195,22 +198,44 @@ class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = Bank_AccountSerializer
 
 #---------------------------------------------------------------------------------------------------------
-@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
-def upload_image(request):
-    if request.method == 'POST':
-        file = request.FILES['image']
+#@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
+#def upload_image(request):
+ #   if request.method == 'POST':
+  #      file = request.FILES['image']
         # Get the Firebase storage bucket
-        bucket = storage.bucket()
+   #     bucket = storage.bucket()
         # Create a blob for the uploaded file
-        blob = bucket.blob(f'images/{file.name}')
-        blob.upload_from_file(file, content_type=file.content_type)
+    #    blob = bucket.blob(f'images/{file.name}')
+     #   blob.upload_from_file(file, content_type=file.content_type)
 
         # Make the file publicly accessible
-        blob.make_public()
+      #  blob.make_public()
 
         # Store the image URL in the database (optional)
-        image = Image.objects.create(image_url=blob.public_url)
+       # image = Image.objects.create(image_url=blob.public_url)
 
-        return HttpResponse("Image Uploaded!")
+        #return HttpResponse("Image Uploaded!")
 
-    return render(request, 'main/upload_image.html')
+#    return render(request, 'main/upload_image.html')
+
+def trigger_lambda(request):
+    # Configure AWS Lambda client
+    lambda_client = boto3.client('lambda', region_name='us-east-1')  # Update region as needed
+
+    # Payload to send to Lambda (adjust as per Lambda requirements)
+    payload = {
+        "key": "value"  # replace with relevant data
+    }
+
+    response = lambda_client.invoke(
+        FunctionName='your_lambda_function_name',
+        InvocationType='RequestResponse',
+        Payload=json.dumps(payload)
+    )
+
+    response_payload = json.loads(response['Payload'].read())
+
+    return JsonResponse({
+        'LambdaResponse': response_payload
+    })
+

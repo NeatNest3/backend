@@ -392,12 +392,25 @@ class Bank_Account(models.Model):
     
 #---------------------------------------------------------------------------------------------------------
 
+#class Image(models.Model):
+ #   image_url = models.URLField(max_length=200)
+  #  created_at = models.DateTimeField(auto_now_add=True)
+
+   # def __str__(self):
+    #    return f'Image {self.id}'
+    
+
+
+#---------------------------------------------------------------------------------------------------------
+
 class Image(models.Model):
-    image_url = models.URLField(max_length=200)
-    created_at = models.DateTimeField(auto_now_add=True)
+    image = models.ImageField(upload_to='images/')  # The 'upload_to' path is relative to the S3 bucket
+    image_url = models.URLField(null=False) 
 
     def __str__(self):
-        return f'Image {self.id}'
+        return self.image.name
+
+
 
 # class Ticket(models.Model):
 

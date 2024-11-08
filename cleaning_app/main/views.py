@@ -247,7 +247,7 @@ def upload_image(request):
 
 def trigger_lambda(request):
     # Configure AWS Lambda client
-    lambda_client = boto3.client('lambda', region_name='us-east-1')  # Update region as needed
+    lambda_client = boto3.client('lambda', region_name='us-east-2')  # Update region as needed
 
     # Payload to send to Lambda (adjust as per Lambda requirements)
     payload = {
@@ -255,7 +255,7 @@ def trigger_lambda(request):
     }
 
     response = lambda_client.invoke(
-        FunctionName='your_lambda_function_name',
+        FunctionName='s3LambdaFunction',
         InvocationType='RequestResponse',
         Payload=json.dumps(payload)
     )

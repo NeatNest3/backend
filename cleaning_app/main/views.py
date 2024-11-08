@@ -3,18 +3,18 @@ from .models import *
 from .serializers import *
 from django.http import HttpResponse
 from rest_framework import generics
-from .serializers import *
-from django.shortcuts import render, redirect
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.conf import settings
+from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Image
 import firebase_admin
 from firebase_admin import storage, credentials
 import os
 from.models import Image
 from django.urls import reverse
-from django.contrib.auth import get_user_model
-
+from .utils import get_eligible_providers, get_nearby_providers
 
 
 def homepage(request):
@@ -22,6 +22,7 @@ def homepage(request):
 
 #---------------------------------------------------------------------------------------------------------
 # User Views
+
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -32,6 +33,7 @@ class UserDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
+
 class CustomerList(generics.ListCreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -51,6 +53,7 @@ class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
+
 class SpecialtyList(generics.ListCreateAPIView):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
@@ -71,7 +74,7 @@ class Service_ProviderList(generics.ListCreateAPIView):
         # Ensure that the user ID is provided in the request data.
         user = self.request.data.get('user')
         if user:
-            serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
+            serializer.save(user_id=user)  # This sets the user_id on the Service Provider instance being created.
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
@@ -107,6 +110,7 @@ class HomeHistoryList(generics.ListAPIView):
         return Job.objects.filter(home=home_id).order_by('-date')
 
 #---------------------------------------------------------------------------------------------------------
+# Room Views
 
 class RoomList(generics.ListCreateAPIView):
     queryset = Room.objects.all()
@@ -117,8 +121,8 @@ class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = RoomSerializer
 
 #---------------------------------------------------------------------------------------------------------
-
 # Job Views
+
 class JobList(generics.ListCreateAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
@@ -129,6 +133,7 @@ class JobDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Availability Views
+
 class AvailabilityList(generics.ListCreateAPIView):
     queryset = Availability.objects.all()
     serializer_class = AvailabilitySerializer
@@ -139,6 +144,7 @@ class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Views
+
 class PaymentList(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
@@ -149,6 +155,7 @@ class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Service Views
+
 class ServiceList(generics.ListCreateAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
@@ -169,6 +176,7 @@ class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Review Views
+
 class ReviewList(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -189,6 +197,7 @@ class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Bank Account Views
+
 class Bank_AccountList(generics.ListCreateAPIView):
     queryset = Bank_Account.objects.all()
     serializer_class = Bank_AccountSerializer
@@ -198,10 +207,28 @@ class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = Bank_AccountSerializer
 
 #---------------------------------------------------------------------------------------------------------
-#@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
-#def upload_image(request):
- #   if request.method == 'POST':
-  #      file = request.FILES['image']
+
+class NearbyProvidersView(APIView):
+
+    def get(self, request, home_id):
+        # Retrieve the specific Home instance based on home_id
+        customer_home = Home.objects.get(id=home_id)
+
+        # Pass the Home instance to get eligible providers
+        eligible_providers = get_eligible_providers(customer_home)
+        api_key = settings.LOCATIONIQ_API_KEY
+
+        # Pass only the customer_home ID and eligible providers to get_nearby_providers
+        nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
+
+        return Response(nearby_providers)
+    
+#---------------------------------------------------------------------------------------------------------
+
+@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
+def upload_image(request):
+    if request.method == 'POST':
+        file = request.FILES['image']
         # Get the Firebase storage bucket
    #     bucket = storage.bucket()
         # Create a blob for the uploaded file
@@ -214,7 +241,7 @@ class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
         # Store the image URL in the database (optional)
        # image = Image.objects.create(image_url=blob.public_url)
 
-        #return HttpResponse("Image Uploaded!")
+        return HttpResponse("Image Successfully Uploaded!")
 
 #    return render(request, 'main/upload_image.html')
 

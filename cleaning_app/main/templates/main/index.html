@@ -31,6 +31,8 @@
 
         path("service-providers/&lt;int:pk&gt;/job-history", JobHistoryList.as_view(), name='service-provider-job-history'),
 
+        path("nearby-providers/&lt;int:pk&gt;/", NearbyProvidersView.as_view(), name="nearby-providers"),
+
         path("homes/", HomeList.as_view(), name="home-list"),
 
         path("homes/&lt;int:pk&gt;/", HomeDetails.as_view(), name="home-details"),

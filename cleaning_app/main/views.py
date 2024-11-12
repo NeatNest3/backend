@@ -225,10 +225,10 @@ class NearbyProvidersView(APIView):
     
 #---------------------------------------------------------------------------------------------------------
 
-@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
-def upload_image(request):
-    if request.method == 'POST':
-        file = request.FILES['image']
+#@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
+#def upload_image(request):
+   #if request.method == 'POST':
+        #file = request.FILES['image']
         # Get the Firebase storage bucket
    #     bucket = storage.bucket()
         # Create a blob for the uploaded file
@@ -241,28 +241,26 @@ def upload_image(request):
         # Store the image URL in the database (optional)
        # image = Image.objects.create(image_url=blob.public_url)
 
-        return HttpResponse("Image Successfully Uploaded!")
-
+       # return HttpResponse("Image Successfully Uploaded!")
 #    return render(request, 'main/upload_image.html')
 
-def trigger_lambda(request):
-    # Configure AWS Lambda client
-    lambda_client = boto3.client('lambda', region_name='us-east-2')  # Update region as needed
+import requests
 
-    # Payload to send to Lambda (adjust as per Lambda requirements)
-    payload = {
-        "key": "value"  # replace with relevant data
-    }
+def upload_image(request):
+    if request.method == 'POST':
+        file = request.FILES.get('file')
+        if not file:
+            return JsonResponse({'error': 'No file provided'}, status=400)
 
-    response = lambda_client.invoke(
-        FunctionName='s3LambdaFunction',
-        InvocationType='RequestResponse',
-        Payload=json.dumps(payload)
-    )
+        # Set up data for the Lambda function
+        url = 'https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction'
+        files = {'file': file.read()}
+        headers = {'Content-Type': 'application/octet-stream'}
 
-    response_payload = json.loads(response['Payload'].read())
-
-    return JsonResponse({
-        'LambdaResponse': response_payload
-    })
-
+        # Make the request
+        response = requests.post(url, files=files, headers=headers)
+        
+        if response.status_code != 200:
+            raise Exception("Failed to upload to S3")
+        
+        return JsonResponse({'message': 'File uploaded successfully'}, status=200)

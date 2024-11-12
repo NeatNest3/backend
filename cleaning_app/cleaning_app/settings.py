@@ -165,3 +165,5 @@ AWS_S3_REGION_NAME = 'us-east-2'
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+LAMBDA_API_URL = "https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"

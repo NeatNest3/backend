@@ -8,11 +8,14 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Image
-import firebase_admin
-from firebase_admin import storage, credentials
-import os
-from.models import Image
 from django.urls import reverse
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from .firebase import db
+from firebase_admin import firestore
+from .models import DeviceToken
+from .firebase import messaging
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
@@ -195,22 +198,90 @@ class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = Bank_AccountSerializer
 
 #---------------------------------------------------------------------------------------------------------
-@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
-def upload_image(request):
-    if request.method == 'POST':
-        file = request.FILES['image']
-        # Get the Firebase storage bucket
-        bucket = storage.bucket()
-        # Create a blob for the uploaded file
-        blob = bucket.blob(f'images/{file.name}')
-        blob.upload_from_file(file, content_type=file.content_type)
+# Function to save a message in Firestore when a user sends one.
+def send_message(request, sender_id, receiver_id):
+    sender = get_object_or_404(User, id=sender_id)
+    receiver = get_object_or_404(User, id=receiver_id)
+    text = request.POST.get("text")
+    
+    # Firestore chat ID generation based on user IDs
+    chat_id = f"{min(sender_id, receiver_id)}_{max(sender_id, receiver_id)}"
+    
+    # Save the message in Firestore
+    message_data = {
+        "senderId": sender_id,
+        "receiverId": receiver_id,
+        "text": text,
+        "timestamp": firestore.SERVER_TIMESTAMP,
+        "seen": False
+    }
+    
+    db.collection("chats").document(chat_id).collection("messages").add(message_data)
+    
+    # Update the last message at the chat level for easy querying
+    db.collection("chats").document(chat_id).set({
+        "lastMessage": text,
+        "timestamp": firestore.SERVER_TIMESTAMP
+    }, merge=True)
 
-        # Make the file publicly accessible
-        blob.make_public()
+    # Send a notification to the receiver
+    send_fcm_notification(receiver_id, text)
 
-        # Store the image URL in the database (optional)
-        image = Image.objects.create(image_url=blob.public_url)
+    return JsonResponse({"status": "Message sent"})
 
-        return HttpResponse("Image Successfully Uploaded!")
+#---------------------------------------------------------------------------------------------------------
+# Function to send  notifications using FCM (Firebase Cloud Messaging)
+def send_fcm_notification(receiver_id, message_text):
+    try:
+        # Retrieve the FCM token for the receiver
+        token = DeviceToken.objects.get(user_id=receiver_id).token
+        
+        # Create a notification payload
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title="New Message",
+                body=message_text
+            ),
+            token=token,
+        )
+        
+        # Send the notification
+        response = messaging.send(message)
+        print(f"Notification sent successfully: {response}")
+    except DeviceToken.DoesNotExist:
+        print("No device token found for user.")
+    except Exception as e:
+        print(f"Error sending notification: {e}")
+#------------------------------------------------------------------------------------------------------------
+# Function when a user reads a message it marks it as seen in Firestore.
+def mark_message_as_seen(request, chat_id, message_id):
+    db.collection("chats").document(chat_id).collection("messages").document(message_id).update({
+        "seen": True
+    })
+    return JsonResponse({"status": "Message marked as seen"})\
+    
 
-    return render(request, 'main/upload_image.html')
+
+
+
+
+
+# @csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
+# def upload_image(request):
+#     if request.method == 'POST':
+#         file = request.FILES['image']
+#         # Get the Firebase storage bucket
+#         bucket = storage.bucket()
+#         # Create a blob for the uploaded file
+#         blob = bucket.blob(f'images/{file.name}')
+#         blob.upload_from_file(file, content_type=file.content_type)
+
+#         # Make the file publicly accessible
+#         blob.make_public()
+
+#         # Store the image URL in the database (optional)
+#         image = Image.objects.create(image_url=blob.public_url)
+
+#         return HttpResponse("Image Successfully Uploaded!")
+
+#     return render(request, 'main/upload_image.html')

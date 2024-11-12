@@ -14,10 +14,13 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from .firebase import db
-from firebase_admin import firestore
+# from .firebase import db
+# from firebase_admin import firestore
 from .models import DeviceToken
-from .firebase import messaging
+from cleaning_app.cleaning_app.local_settings import messaging
+from .firebase_messaging import *
+from rest_framework.permissions import IsAuthenticated
+from .utils import get_eligible_providers, get_nearby_providers
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
@@ -28,10 +31,12 @@ def homepage(request):
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
 
 class UserDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
@@ -39,6 +44,7 @@ class UserDetails(generics.RetrieveUpdateDestroyAPIView):
 class CustomerList(generics.ListCreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         # Here, 'user' should be included in the validated data sent from the frontend.
@@ -52,6 +58,7 @@ class CustomerList(generics.ListCreateAPIView):
 class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
@@ -59,10 +66,12 @@ class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
 class SpecialtyList(generics.ListCreateAPIView):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
+    permission_classes = [IsAuthenticated]
 
 class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views
@@ -70,6 +79,7 @@ class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
 class Service_ProviderList(generics.ListCreateAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         # Here, 'user' should be included in the validated data sent from the frontend.
@@ -83,10 +93,12 @@ class Service_ProviderList(generics.ListCreateAPIView):
 class Service_ProviderDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class JobHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         service_provider_id = self.kwargs['pk']
@@ -99,13 +111,16 @@ class JobHistoryList(generics.ListAPIView):
 class HomeList(generics.ListCreateAPIView):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
+    permission_classes = [IsAuthenticated]
 
 class HomeDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
+    permission_classes = [IsAuthenticated]
 
 class HomeHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         home_id = self.kwargs['pk']
@@ -117,10 +132,12 @@ class HomeHistoryList(generics.ListAPIView):
 class RoomList(generics.ListCreateAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
+    permission_classes = [IsAuthenticated]
 
 class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Job Views
@@ -128,10 +145,12 @@ class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
 class JobList(generics.ListCreateAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated]
 
 class JobDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Availability Views
@@ -139,10 +158,12 @@ class JobDetails(generics.RetrieveUpdateDestroyAPIView):
 class AvailabilityList(generics.ListCreateAPIView):
     queryset = Availability.objects.all()
     serializer_class = AvailabilitySerializer
+    permission_classes = [IsAuthenticated]
 
 class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Availability.objects.all()
     serializer_class = AvailabilitySerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Views
@@ -150,10 +171,12 @@ class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
 class PaymentList(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
 
 class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Service Views
@@ -161,20 +184,24 @@ class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
 class ServiceList(generics.ListCreateAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+    permission_classes = [IsAuthenticated]
 
 class ServiceDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Task Views
 class TaskList(generics.ListCreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
 
 class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Review Views
@@ -182,20 +209,24 @@ class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
 class ReviewList(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
 
 class ReviewDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Method Views
 class Payment_MethodList(generics.ListCreateAPIView):
     queryset = Payment_Method.objects.all()
     serializer_class = Payment_MethodSerializer
+    permission_classes = [IsAuthenticated]
 
 class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Payment_Method.objects.all()
     serializer_class = Payment_MethodSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Bank Account Views
@@ -203,74 +234,92 @@ class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
 class Bank_AccountList(generics.ListCreateAPIView):
     queryset = Bank_Account.objects.all()
     serializer_class = Bank_AccountSerializer
+    permission_classes = [IsAuthenticated]
 
 class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = Bank_Account.objects.all()
     serializer_class = Bank_AccountSerializer
+    permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
-# Function to save a message in Firestore when a user sends one.
-def send_message(request, sender_id, receiver_id):
-    sender = get_object_or_404(User, id=sender_id)
-    receiver = get_object_or_404(User, id=receiver_id)
-    text = request.POST.get("text")
-    
-    # Firestore chat ID generation based on user IDs
-    chat_id = f"{min(sender_id, receiver_id)}_{max(sender_id, receiver_id)}"
-    
-    # Save the message in Firestore
-    message_data = {
-        "senderId": sender_id,
-        "receiverId": receiver_id,
-        "text": text,
-        "timestamp": firestore.SERVER_TIMESTAMP,
-        "seen": False
-    }
-    
-    db.collection("chats").document(chat_id).collection("messages").add(message_data)
-    
-    # Update the last message at the chat level for easy querying
-    db.collection("chats").document(chat_id).set({
-        "lastMessage": text,
-        "timestamp": firestore.SERVER_TIMESTAMP
-    }, merge=True)
 
-    # Send a notification to the receiver
-    send_fcm_notification(receiver_id, text)
-
-    return JsonResponse({"status": "Message sent"})
-
+class NearbyProvidersView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, home_id):
+        # Retrieve the specific Home instance based on home_id
+        customer_home = Home.objects.get(id=home_id)
+        # Pass the Home instance to get eligible providers
+        eligible_providers = get_eligible_providers(customer_home)
+        api_key = settings.LOCATIONIQ_API_KEY
+        # Pass only the customer_home ID and eligible providers to get_nearby_providers
+        nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
+        return Response(nearby_providers)
+    
 #---------------------------------------------------------------------------------------------------------
-# Function to send  notifications using FCM (Firebase Cloud Messaging)
-def send_fcm_notification(receiver_id, message_text):
-    try:
-        # Retrieve the FCM token for the receiver
-        token = DeviceToken.objects.get(user_id=receiver_id).token
-        
-        # Create a notification payload
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title="New Message",
-                body=message_text
-            ),
-            token=token,
-        )
-        
-        # Send the notification
-        response = messaging.send(message)
-        print(f"Notification sent successfully: {response}")
-    except DeviceToken.DoesNotExist:
-        print("No device token found for user.")
-    except Exception as e:
-        print(f"Error sending notification: {e}")
-#------------------------------------------------------------------------------------------------------------
-# Function when a user reads a message it marks it as seen in Firestore.
-def mark_message_as_seen(request, chat_id, message_id):
-    db.collection("chats").document(chat_id).collection("messages").document(message_id).update({
-        "seen": True
-    })
-    return JsonResponse({"status": "Message marked as seen"})\
+# # Function to save a message in Firestore when a user sends one.
+# def send_message(request, sender_id, receiver_id):
+#     sender = get_object_or_404(User, id=sender_id)
+#     receiver = get_object_or_404(User, id=receiver_id)
+#     text = request.POST.get("text")
     
+#     # Firestore chat ID generation based on user IDs
+#     chat_id = f"{min(sender_id, receiver_id)}_{max(sender_id, receiver_id)}"
+    
+#     # Save the message in Firestore
+#     message_data = {
+#         "senderId": sender_id,
+#         "receiverId": receiver_id,
+#         "text": text,
+#         "timestamp": firestore.SERVER_TIMESTAMP,
+#         "seen": False
+#     }
+    
+#     db.collection("chats").document(chat_id).collection("messages").add(message_data)
+    
+#     # Update the last message at the chat level for easy querying
+#     db.collection("chats").document(chat_id).set({
+#         "lastMessage": text,
+#         "timestamp": firestore.SERVER_TIMESTAMP
+#     }, merge=True)
+
+#     # Send a notification to the receiver
+#     send_fcm_notification(receiver_id, text)
+
+#     return JsonResponse({"status": "Message sent"})
+
+# #---------------------------------------------------------------------------------------------------------
+# # Function to send  notifications using FCM (Firebase Cloud Messaging)
+# def send_fcm_notification(receiver_id, message_text):
+#     try:
+#         # Retrieve the FCM token for the receiver
+#         token = DeviceToken.objects.get(user_id=receiver_id).token
+        
+#         # Create a notification payload
+#         message = messaging.Message(
+#             notification=messaging.Notification(
+#                 title="New Message",
+#                 body=message_text
+#             ),
+#             token=token,
+#         )
+        
+#         # Send the notification
+#         response = messaging.send(message)
+#         print(f"Notification sent successfully: {response}")
+#     except DeviceToken.DoesNotExist:
+#         print("No device token found for user.")
+#     except Exception as e:
+#         print(f"Error sending notification: {e}")
+# #------------------------------------------------------------------------------------------------------------
+# # Function when a user reads a message it marks it as seen in Firestore.
+# def mark_message_as_seen(request, chat_id, message_id):
+#     db.collection("chats").document(chat_id).collection("messages").document(message_id).update({
+#         "seen": True
+#     })
+#     return JsonResponse({"status": "Message marked as seen"})
+    
+
+
 
 
 

@@ -1,8 +1,5 @@
 from django.contrib import admin
-from .models import (
-    User, Customer, Specialty, Service_Provider, Home, Job,
-    Availability, Payment, Service, Task, Review, Payment_Method, Bank_Account
-)
+from .models import *
 
 # Register your models here
 admin.site.register(User)
@@ -18,3 +15,5 @@ admin.site.register(Task)
 admin.site.register(Review)
 admin.site.register(Payment_Method)
 admin.site.register(Bank_Account)
+admin.site.register(Image)
+admin.site.register(DeviceToken)

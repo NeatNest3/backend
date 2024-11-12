@@ -77,11 +77,6 @@
     ]
     </pre></div>
 
-    <h1>Upload Image to Firebase</h1>
-    <form action="{% url 'main:upload_image' %}" method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="file" name="image" required>
-        <button type="submit">Upload Image</button>
 
 </body>
 </html>

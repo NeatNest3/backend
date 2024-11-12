@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 def geocode_address(address, state, city, api_key=settings.LOCATIONIQ_API_KEY):
     """Retrieve coordinates for a given address using LocationIQ's forward geocoding API."""
+    
     url = 'https://us1.locationiq.com/v1/search'
     params = {
         "key": api_key,

@@ -1,9 +1,11 @@
-
+import boto3
 from .models import *
 from .serializers import *
 from django.http import HttpResponse
 from rest_framework import generics
-from .serializers import *
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -22,6 +24,7 @@ def homepage(request):
 
 #---------------------------------------------------------------------------------------------------------
 # User Views
+
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -32,6 +35,7 @@ class UserDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
+
 class CustomerList(generics.ListCreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -51,6 +55,7 @@ class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
+
 class SpecialtyList(generics.ListCreateAPIView):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
@@ -71,7 +76,7 @@ class Service_ProviderList(generics.ListCreateAPIView):
         # Ensure that the user ID is provided in the request data.
         user = self.request.data.get('user')
         if user:
-            serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
+            serializer.save(user_id=user)  # This sets the user_id on the Service Provider instance being created.
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
@@ -107,6 +112,7 @@ class HomeHistoryList(generics.ListAPIView):
         return Job.objects.filter(home=home_id).order_by('-date')
 
 #---------------------------------------------------------------------------------------------------------
+# Room Views
 
 class RoomList(generics.ListCreateAPIView):
     queryset = Room.objects.all()
@@ -117,8 +123,8 @@ class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = RoomSerializer
 
 #---------------------------------------------------------------------------------------------------------
-
 # Job Views
+
 class JobList(generics.ListCreateAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
@@ -129,6 +135,7 @@ class JobDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Availability Views
+
 class AvailabilityList(generics.ListCreateAPIView):
     queryset = Availability.objects.all()
     serializer_class = AvailabilitySerializer
@@ -139,6 +146,7 @@ class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Views
+
 class PaymentList(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
@@ -149,6 +157,7 @@ class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Service Views
+
 class ServiceList(generics.ListCreateAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
@@ -169,6 +178,7 @@ class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Review Views
+
 class ReviewList(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -189,6 +199,7 @@ class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
 
 #---------------------------------------------------------------------------------------------------------
 # Bank Account Views
+
 class Bank_AccountList(generics.ListCreateAPIView):
     queryset = Bank_Account.objects.all()
     serializer_class = Bank_AccountSerializer

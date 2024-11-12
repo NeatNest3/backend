@@ -1,3 +1,5 @@
 /.venv
 /cleaning_app/cleaning_app/local_settings.py 
+*.pyc
 __pycache__/
+/.env

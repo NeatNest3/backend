@@ -11,7 +11,26 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+#from dotenv import load_dotenv
+import os
+import logging
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}
+
+#load_dotenv()
+LOCATIONIQ_API_KEY = os.getenv("LOCATIONIQ_API_KEY")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -62,6 +81,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 ]
+
 
 ROOT_URLCONF = 'cleaning_app.cleaning_app.urls'
 # Allow all domains (for testing, use with caution in production)
@@ -137,7 +157,11 @@ try:
 except ImportError:
     pass
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 1135de4400e4789d753bb58188dc53cb3c4cd8ae
+AWS_ACCESS_KEY_ID = 'AKIA6NINTDPMKXSITS4F'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'cleaningapp'
+AWS_S3_REGION_NAME = 'us-east-2'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

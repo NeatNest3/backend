@@ -1,0 +1,1 @@
+default_app_config = 'cleaning_app.apps.MainConfig'

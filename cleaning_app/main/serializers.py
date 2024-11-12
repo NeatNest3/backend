@@ -57,6 +57,13 @@ class Service_ProviderSerializer(serializers.ModelSerializer):
         return service_provider
 
 
+class Service_Provider_DistanceSerializer(serializers.ModelSerializer):
+    distance = serializers.FloatField()
+
+    class Meta:
+        model = Service_Provider
+        fields = ['id', 'user', 'flexible_rate', 'pet_friendly', 'rating', 'background_check', 'bio_work_history', 'specialties', 'distance']
+
 class HomeSerializer(serializers.ModelSerializer):
 
     class Meta:

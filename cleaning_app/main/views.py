@@ -244,6 +244,7 @@ class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
 #---------------------------------------------------------------------------------------------------------
 
 class NearbyProvidersView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, home_id):
         # Retrieve the specific Home instance based on home_id
         customer_home = Home.objects.get(id=home_id)

@@ -17,8 +17,8 @@ from django.http import JsonResponse
 # from .firebase import db
 # from firebase_admin import firestore
 from .models import DeviceToken
-from .firebase import messaging
-from firebase_messaging import *
+from cleaning_app.cleaning_app.local_settings import messaging
+from .firebase_messaging import *
 from rest_framework.permissions import IsAuthenticated
 from .utils import get_eligible_providers, get_nearby_providers
 

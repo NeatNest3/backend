@@ -28,6 +28,7 @@ httplib2==0.22.0
 idna==3.10
 jmespath==1.0.1
 msgpack==1.1.0
+pillow==11.0.0
 proto-plus==1.25.0
 protobuf==5.28.3
 psycopg2==2.9.10

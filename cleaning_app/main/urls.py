@@ -16,8 +16,7 @@ Including another URLconf
 """
 from django.urls import path
 from .views import *
-from .views import upload_image
-from . import views
+
 
 
 app_name = 'main'
@@ -55,6 +54,5 @@ urlpatterns = [
     path("payment-methods/<int:pk>/", Payment_MethodDetails.as_view(), name="payment-method-details"),
     path("bank-accounts/", Bank_AccountList.as_view(), name="bank-account-list"),
     path("bank-accounts/<int:pk>/", Bank_AccountDetails.as_view(), name="bank-account-details"),
-    path('upload-image/', views.upload_image, name='upload_image'),
 ]
 

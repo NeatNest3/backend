@@ -3,7 +3,8 @@ from django.contrib.auth.models import AbstractUser # inherited by user model fo
 from django.conf import settings  # To reference the User model
 from django.core.validators import MinValueValidator, MaxValueValidator # to set min and max values for ratings
 from django.core.exceptions import ValidationError
-# import uuid
+from django.contrib.auth.models import User
+
 
 #---------------------------------------------------------------------------------------------------------
 
@@ -108,6 +109,8 @@ class Specialty(models.Model):
     # For example, could add a price modifier or a level of expertise requirement
     # price_modifier = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     # experience_level = models.CharField(max_length=50, blank=True, null=True)
+
+    # rooms_list = list(job.rooms.all())
 
     def __str__(self):
         return self.name
@@ -416,9 +419,18 @@ class Image(models.Model):
     image_url = models.URLField(null=False) 
 
     def __str__(self):
-        return self.image.name
+        return f'Image {self.id}'
+    
+#---------------------------------------------------------------------------------------------------------
 
+# model to save FCM (Firebase Cloud Messaging). Needed to be able to send notifications.
+class DeviceToken(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    token = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.user.username} - Token"
 
 # class Ticket(models.Model):
 

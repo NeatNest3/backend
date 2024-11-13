@@ -3,14 +3,41 @@ from django.conf import settings
 from django.db.models import Q
 from .models import Service_Provider, Home, Customer
 from .serializers import Service_Provider_DistanceSerializer
+from firebase_admin import auth
+from rest_framework import authentication, exceptions
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+#---------------------------------------------------------------------------------------------------------
+
+
+class FirebaseAuthentication(authentication.BaseAuthentication):
+    def authenticate(self, request):
+        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        if not auth_header:
+            return None
+        
+        try:
+            # Parse Token
+            token = auth_header.split(" ")[1]
+
+            # Verify Firebase Token
+            decoded_token = auth.verify_id_token(token)
+            uid = decoded_token['uid']
+
+            # Retrieve additional info - email, name, etc.
+            return (uid, None)
+        except Exception:
+            raise exceptions.AuthenticationFailed("Token Authentication Failed")
+
 
 #---------------------------------------------------------------------------------------------------------
 
 def geocode_address(address, state, city, api_key=settings.LOCATIONIQ_API_KEY):
     """Retrieve coordinates for a given address using LocationIQ's forward geocoding API."""
+
     url = 'https://us1.locationiq.com/v1/search'
     params = {
         "key": api_key,

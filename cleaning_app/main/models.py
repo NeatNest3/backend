@@ -22,6 +22,8 @@ class User(AbstractUser):
         ('fragrance', 'Fragrance'), ('SLS', 'SLS'), ('ammonia', 'Ammonia'), 
         ('bleach', 'Bleach'), ('other', 'Other')
     ]
+    
+    password = models.CharField(max_length=128, blank=True, null=True)
 
     password = models.CharField(max_length=128, blank=True, null=True)
 

@@ -256,92 +256,43 @@ class NearbyProvidersView(APIView):
         return Response(nearby_providers)
     
 #---------------------------------------------------------------------------------------------------------
-# # Function to save a message in Firestore when a user sends one.
-# def send_message(request, sender_id, receiver_id):
-#     sender = get_object_or_404(User, id=sender_id)
-#     receiver = get_object_or_404(User, id=receiver_id)
-#     text = request.POST.get("text")
-    
-#     # Firestore chat ID generation based on user IDs
-#     chat_id = f"{min(sender_id, receiver_id)}_{max(sender_id, receiver_id)}"
-    
-#     # Save the message in Firestore
-#     message_data = {
-#         "senderId": sender_id,
-#         "receiverId": receiver_id,
-#         "text": text,
-#         "timestamp": firestore.SERVER_TIMESTAMP,
-#         "seen": False
-#     }
-    
-#     db.collection("chats").document(chat_id).collection("messages").add(message_data)
-    
-#     # Update the last message at the chat level for easy querying
-#     db.collection("chats").document(chat_id).set({
-#         "lastMessage": text,
-#         "timestamp": firestore.SERVER_TIMESTAMP
-#     }, merge=True)
 
-#     # Send a notification to the receiver
-#     send_fcm_notification(receiver_id, text)
+#@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
+#def upload_image(request):
+   #if request.method == 'POST':
+        #file = request.FILES['image']
+        # Get the Firebase storage bucket
+   #     bucket = storage.bucket()
+        # Create a blob for the uploaded file
+    #    blob = bucket.blob(f'images/{file.name}')
+     #   blob.upload_from_file(file, content_type=file.content_type)
 
-#     return JsonResponse({"status": "Message sent"})
+        # Make the file publicly accessible
+      #  blob.make_public()
 
-# #---------------------------------------------------------------------------------------------------------
-# # Function to send  notifications using FCM (Firebase Cloud Messaging)
-# def send_fcm_notification(receiver_id, message_text):
-#     try:
-#         # Retrieve the FCM token for the receiver
-#         token = DeviceToken.objects.get(user_id=receiver_id).token
+        # Store the image URL in the database (optional)
+       # image = Image.objects.create(image_url=blob.public_url)
+
+       # return HttpResponse("Image Successfully Uploaded!")
+#    return render(request, 'main/upload_image.html')
+
+import requests
+
+def upload_image(request):
+    if request.method == 'POST':
+        file = request.FILES.get('file')
+        if not file:
+            return JsonResponse({'error': 'No file provided'}, status=400)
+
+        # Set up data for the Lambda function
+        url = 'https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction'
+        files = {'file': file.read()}
+        headers = {'Content-Type': 'application/octet-stream'}
+
+        # Make the request
+        response = requests.post(url, files=files, headers=headers)
         
-#         # Create a notification payload
-#         message = messaging.Message(
-#             notification=messaging.Notification(
-#                 title="New Message",
-#                 body=message_text
-#             ),
-#             token=token,
-#         )
+        if response.status_code != 200:
+            raise Exception("Failed to upload to S3")
         
-#         # Send the notification
-#         response = messaging.send(message)
-#         print(f"Notification sent successfully: {response}")
-#     except DeviceToken.DoesNotExist:
-#         print("No device token found for user.")
-#     except Exception as e:
-#         print(f"Error sending notification: {e}")
-# #------------------------------------------------------------------------------------------------------------
-# # Function when a user reads a message it marks it as seen in Firestore.
-# def mark_message_as_seen(request, chat_id, message_id):
-#     db.collection("chats").document(chat_id).collection("messages").document(message_id).update({
-#         "seen": True
-#     })
-#     return JsonResponse({"status": "Message marked as seen"})
-    
-
-
-
-
-
-
-
-
-# @csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
-# def upload_image(request):
-#     if request.method == 'POST':
-#         file = request.FILES['image']
-#         # Get the Firebase storage bucket
-#         bucket = storage.bucket()
-#         # Create a blob for the uploaded file
-#         blob = bucket.blob(f'images/{file.name}')
-#         blob.upload_from_file(file, content_type=file.content_type)
-
-#         # Make the file publicly accessible
-#         blob.make_public()
-
-#         # Store the image URL in the database (optional)
-#         image = Image.objects.create(image_url=blob.public_url)
-
-#         return HttpResponse("Image Successfully Uploaded!")
-
-#     return render(request, 'main/upload_image.html')
+        return JsonResponse({'message': 'File uploaded successfully'}, status=200)

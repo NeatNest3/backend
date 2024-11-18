@@ -176,3 +176,5 @@ REST_FRAMEWORK = {
     ),
 }
 
+
+LAMBDA_API_URL = "https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"

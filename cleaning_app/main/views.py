@@ -91,7 +91,7 @@ class CreateUserFromFirebase(APIView):
                 phone=user_data['phone'],
                 email=user_data['email'],
                 password=user_data['password'],  
-                allergies=user_data['allergies'],
+                allergies=user_data('allergies', []),
                 date_of_birth=user_data['date_of_birth'],
                 role=user_data['role'],
                 firebase_uid=user_data['firebase_uid']
@@ -100,9 +100,11 @@ class CreateUserFromFirebase(APIView):
             user_serializer = UserSerializer(user)
 
             return Response(user_serializer.data, status=status.HTTP_201_CREATED)
-
+        
+        except ValidationError as e:
+            return Response({"error": f"Validation failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"error": f"Failed to authenticate with Firebase: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserList(generics.ListCreateAPIView):

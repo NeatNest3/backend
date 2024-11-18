@@ -23,6 +23,8 @@ class User(AbstractUser):
         ('bleach', 'Bleach'), ('other', 'Other')
     ]
 
+    password = models.CharField(max_length=128, blank=True, null=True)
+
     #preffered name field for nicknames/preferences 
     preferred_name = models.CharField(max_length=25, blank=True, null=True)
 

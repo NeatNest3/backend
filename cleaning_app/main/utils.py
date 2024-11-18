@@ -1,9 +1,9 @@
 import requests
 from django.conf import settings
 from django.db.models import Q
-from .models import Service_Provider, Home, Customer
+from .models import Service_Provider, Home, Customer, User
 from .serializers import Service_Provider_DistanceSerializer
-from firebase_admin import auth
+from firebase_admin import auth as firebase_auth
 from rest_framework import authentication, exceptions
 import logging
 
@@ -15,23 +15,56 @@ logger = logging.getLogger(__name__)
 
 class FirebaseAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
+        # Extract the Authorization header
         auth_header = request.META.get('HTTP_AUTHORIZATION')
+        
         if not auth_header:
-            return None
+            return None  # No token provided, let other authentication methods handle it
         
         try:
-            # Parse Token
+            # Split the header to get the token
             token = auth_header.split(" ")[1]
-
-            # Verify Firebase Token
-            decoded_token = auth.verify_id_token(token)
+            
+            # Verify the Firebase ID token
+            decoded_token = firebase_auth.verify_id_token(token)
             uid = decoded_token['uid']
+            
+            # Try to retrieve the user based on the Firebase UID
+            user = self.get_or_create_user(uid)
 
-            # Retrieve additional info - email, name, etc.
-            return (uid, None)
-        except Exception:
-            raise exceptions.AuthenticationFailed("Token Authentication Failed")
+            return (user, None)  # Return the authenticated user and None for the auth token
 
+        except Exception as e:
+            # Raise an authentication error if the token is invalid or any other error occurs
+            raise exceptions.AuthenticationFailed("Token authentication failed: {}".format(str(e)))
+
+    def get_or_create_user(self, uid):
+        """
+        Retrieve an existing user or create a new one based on the Firebase UID.
+        This assumes that you've extended the Django User model or added a custom field for the Firebase UID.
+        """
+        try:
+            # Check if a user already exists with the Firebase UID
+            user = User.objects.get(firebase_uid=uid)  # Assume firebase_uid is a custom field in the User model
+        except User.DoesNotExist:
+            # If no user exists, create a new one (you can populate more fields here as needed)
+            user = User.objects.create(username=uid, email=f"{uid}@firebase.com")  # Example, add other fields as needed
+            user.save()
+
+        return user
+
+#---------------------------------------------------------------------------------------------------------
+
+def verify_firebase_uid(firebase_uid):
+    """
+    Verifies the given Firebase UID using Firebase Admin SDK.
+    Returns True if valid, otherwise False.
+    """
+    try:
+        firebase_user = firebase_auth.get_user(firebase_uid)
+        return firebase_user.uid == firebase_uid
+    except firebase_auth.AuthError:
+        return False
 
 #---------------------------------------------------------------------------------------------------------
 

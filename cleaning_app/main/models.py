@@ -40,7 +40,7 @@ class User(AbstractUser):
     date_of_birth = models.DateField(null=False, blank=False)
 
     # JSONField to store multiple allergy selections
-    allergies = models.JSONField(default=list, blank=False, null=False)
+    allergies = models.JSONField(default=list, blank=True, null=True)
 
     firebase_uid = models.CharField(max_length=255, unique=True, null=True, blank=True)
 

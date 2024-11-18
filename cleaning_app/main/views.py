@@ -292,7 +292,6 @@ def upload_image(request):
         # Make the request
         response = requests.post(url, files=files, headers=headers)
         
-        if response.status_code != 200:
-            raise Exception("Failed to upload to S3")
-        
+#         return HttpResponse("Image Successfully Uploaded!")
+
         return JsonResponse({'message': 'File uploaded successfully'}, status=200)

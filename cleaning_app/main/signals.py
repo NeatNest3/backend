@@ -31,7 +31,7 @@ def update_firebase_uid(sender, request, user, **kwargs):
     Signal handler to update firebase_uid when the user logs in via Firebase.
     """
     if not user.firebase_uid:  # Only update if firebase_uid is not set yet
-        firebase_uid = request.META.get('HTTP_X_FIREBASE_UID')  # Assuming UID is passed in headers
+        firebase_uid = request.META.get('HTTP_AUTHORIZATION')  # Assuming UID is passed in headers
         
         if firebase_uid and verify_firebase_uid(firebase_uid):
             user.firebase_uid = firebase_uid

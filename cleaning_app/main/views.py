@@ -64,6 +64,47 @@ class VerifyFirebaseToken(APIView):
 #---------------------------------------------------------------------------------------------------------
 # User Views
 
+
+class CreateUserFromFirebase(APIView):
+    permission_classes = [IsAuthenticated]  # Ensure the request is authenticated via Firebase
+
+    def post(self, request):
+        # Get Firebase ID token from the Authorization header
+        id_token = request.headers.get('Authorization').split(' ')[1]  # Expecting "Bearer <id_token>"
+
+        try:
+            # Verify the Firebase ID token
+            decoded_token = firebase_auth.verify_id_token(id_token)
+            firebase_uid = decoded_token['uid']  # Firebase UID of the user
+
+            # Check if the user already exists in Django by Firebase UID
+            if User.objects.filter(username=firebase_uid).exists():
+                return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create the new user in Django with data from Firebase
+            user_data = request.data
+            user = User.objects.create_user(
+                username=user_data['username'],  # Use Firebase UID as the username
+                first_name=user_data['first_name'],
+                last_name=user_data['last_name'],
+                preffered_name=user_data['preffered_name'],
+                phone=user_data['phone'],
+                email=user_data['email'],
+                password=user_data['password'],  
+                allergies=user_data['allergies'],
+                date_of_birth=user_data['date_of_birth'],
+                role=user_data['role'],
+                firebase_uid=user_data['firebase_uid']
+            )
+
+            user_serializer = UserSerializer(user)
+
+            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": f"Failed to authenticate with Firebase: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer

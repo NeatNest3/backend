@@ -2,7 +2,7 @@ import boto3
 from .models import *
 from .serializers import *
 from django.http import HttpResponse
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.conf import settings
@@ -15,11 +15,12 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 # from .firebase import db
-# from firebase_admin import firestore
+from firebase_admin import auth as firebase_auth, firestore
 from .models import DeviceToken
 from cleaning_app.cleaning_app.local_settings import messaging
 from .firebase_messaging import *
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import get_user_model
 from .utils import get_eligible_providers, get_nearby_providers
 from botocore.exceptions import NoCredentialsError
 
@@ -27,7 +28,83 @@ def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
 
 #---------------------------------------------------------------------------------------------------------
+# Auth View
+
+class VerifyFirebaseToken(APIView):
+    permission_classes = [IsAuthenticated]  # You can set this to allow public access if not using session authentication
+
+    def post(self, request):
+        # Retrieve the Firebase ID token from the Authorization header
+        token = request.headers.get('Authorization')
+        
+        if token is None or not token.startswith('Bearer '):
+            return Response({'error': 'Authorization token is missing or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        id_token = token.split(' ')[1]  # Get the actual token without "Bearer"
+        
+        try:
+            # Verify the Firebase ID token
+            decoded_token = firebase_auth.verify_id_token(id_token)
+            firebase_uid = decoded_token['uid']
+            
+            # Get the user associated with the Firebase UID (you can store it as `firebase_uid` field in your User model)
+            user = get_user_model().objects.filter(firebase_uid=firebase_uid).first()
+            if user:
+                # Optionally, you could set the session or return the user data
+                return Response({
+                    'message': 'User authenticated successfully',
+                    'user': {'id': user.id, 'username': user.username},
+                })
+            else:
+                return Response({'error': 'User does not exist in Django.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        except firebase_auth.AuthError as e:
+            return Response({'error': f'Invalid Firebase token: {str(e)}'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+#---------------------------------------------------------------------------------------------------------
 # User Views
+
+
+class CreateUserFromFirebase(APIView):
+    permission_classes = [IsAuthenticated]  # Ensure the request is authenticated via Firebase
+
+    def post(self, request):
+        # Get Firebase ID token from the Authorization header
+        id_token = request.headers.get('Authorization').split(' ')[1]  # Expecting "Bearer <id_token>"
+
+        try:
+            # Verify the Firebase ID token
+            decoded_token = firebase_auth.verify_id_token(id_token)
+            firebase_uid = decoded_token['uid']  # Firebase UID of the user
+
+            # Check if the user already exists in Django by Firebase UID
+            if User.objects.filter(username=firebase_uid).exists():
+                return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create the new user in Django with data from Firebase
+            user_data = request.data
+            user = User.objects.create_user(
+                username=user_data['username'],  # Use Firebase UID as the username
+                first_name=user_data['first_name'],
+                last_name=user_data['last_name'],
+                preffered_name=user_data['preffered_name'],
+                phone=user_data['phone'],
+                email=user_data['email'],
+                password=user_data['password'],  
+                allergies=user_data['allergies'],
+                date_of_birth=user_data['date_of_birth'],
+                role=user_data['role'],
+                firebase_uid=user_data['firebase_uid']
+            )
+
+            user_serializer = UserSerializer(user)
+
+            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": f"Failed to authenticate with Firebase: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()

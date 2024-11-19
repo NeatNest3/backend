@@ -21,6 +21,7 @@ from cleaning_app.cleaning_app.local_settings import messaging
 from .firebase_messaging import *
 from rest_framework.permissions import IsAuthenticated
 from .utils import get_eligible_providers, get_nearby_providers
+from botocore.exceptions import NoCredentialsError
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
@@ -276,23 +277,44 @@ class NearbyProvidersView(APIView):
        # return HttpResponse("Image Successfully Uploaded!")
 #    return render(request, 'main/upload_image.html')
 
-import requests
 
 def upload_image(request):
     if request.method == 'POST':
-        file = request.FILES.get('file')
-        if not file:
-            return JsonResponse({'error': 'No file provided'}, status=400)
+        # Parse the image from the request
+        form = ImageUploadForm(request.POST, request.FILES)
 
-        # Set up data for the Lambda function
-        url = 'https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction'
-        files = {'file': file.read()}
-        headers = {'Content-Type': 'application/octet-stream'}
+        if form.is_valid():
+            # Get the image file
+            image = form.cleaned_data['image']
 
-        # Make the request
-        response = requests.post(url, files=files, headers=headers)
-        
-        if response.status_code != 200:
-            raise Exception("Failed to upload to S3")
-        
-        return JsonResponse({'message': 'File uploaded successfully'}, status=200)
+            # Upload the image to S3
+            s3 = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+            )
+
+            bucket_name = 'neatnest'
+            key = f"uploads/{image.name}"  # S3 folder path
+
+            try:
+                # Upload the image to the specified S3 bucket
+                s3.upload_fileobj(image, bucket_name, key, ExtraArgs={"ACL": "public-read"})
+
+                # Generate the public URL
+                image_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
+
+                # Return the image URL in the response
+                return JsonResponse({'message': 'Upload successful', 'url': image_url})
+
+            except NoCredentialsError:
+                return JsonResponse({'error': 'AWS credentials not configured'}, status=500)
+
+            except Exception as e:
+                return JsonResponse({'error': f"An error occurred: {str(e)}"}, status=500)
+
+        else:
+            return JsonResponse({'error': 'Invalid form data'}, status=400)
+
+    return JsonResponse({'error': 'Invalid HTTP method. Use POST.'}, status=405)
+

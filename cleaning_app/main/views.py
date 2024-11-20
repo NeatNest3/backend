@@ -23,6 +23,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from .utils import get_eligible_providers, get_nearby_providers
 from botocore.exceptions import NoCredentialsError
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
@@ -354,44 +356,47 @@ class NearbyProvidersView(APIView):
        # return HttpResponse("Image Successfully Uploaded!")
 #    return render(request, 'main/upload_image.html')
 
+import requests
+import base64
 
+LAMBDA_URL = " https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
+
+@csrf_exempt
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
 def upload_image(request):
-    if request.method == 'POST':
-        # Parse the image from the request
-        form = ImageUploadForm(request.POST, request.FILES)
+    if request.method == 'POST' and request.FILES['image']:
+        image_file = request.FILES['image']
+        
+        # Read the image and encode it in base64
+        image_data = image_file.read()
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        
+        # Send the image to AWS Lambda for upload to S3
+        response = requests.post(
+            LAMBDA_URL,
+            json={
+                'image_base64': image_base64,
+                'file_name': image_file.name,
+                'content_type': image_file.content_type,
+            }
+        )
 
-        if form.is_valid():
-            # Get the image file
-            image = form.cleaned_data['image']
+        if response.status_code == 200:
+            # Get the URL of the uploaded image from the Lambda response
+            response_data = response.json()
+            s3_url = response_data.get('url')
 
-            # Upload the image to S3
-            s3 = boto3.client(
-                's3',
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+            # Save the image metadata in your Django model
+            Image.objects.create(
+                file_name=image_file.name,
+                s3_url=s3_url
             )
 
-            bucket_name = 'neatnest'
-            key = f"uploads/{image.name}"  # S3 folder path
-
-            try:
-                # Upload the image to the specified S3 bucket
-                s3.upload_fileobj(image, bucket_name, key, ExtraArgs={"ACL": "public-read"})
-
-                # Generate the public URL
-                image_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
-
-                # Return the image URL in the response
-                return JsonResponse({'message': 'Upload successful', 'url': image_url})
-
-            except NoCredentialsError:
-                return JsonResponse({'error': 'AWS credentials not configured'}, status=500)
-
-            except Exception as e:
-                return JsonResponse({'error': f"An error occurred: {str(e)}"}, status=500)
-
+            # Return success response
+            return JsonResponse({'message': 'Image uploaded successfully', 'url': s3_url}, status=200)
         else:
-            return JsonResponse({'error': 'Invalid form data'}, status=400)
+            return JsonResponse({'error': 'Failed to upload image to S3'}, status=500)
 
-    return JsonResponse({'error': 'Invalid HTTP method. Use POST.'}, status=405)
-
+    return render(request, 'upload_image.html')
+    

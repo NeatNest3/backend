@@ -158,13 +158,16 @@ except ImportError:
     pass
 
 
-AWS_ACCESS_KEY_ID = 'AKIA6NINTDPMKXSITS4F'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'cleaningapp'
+AWS_ACCESS_KEY_ID = 'AKIAXZEFHXWUJ577PGU7'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = ' neatnest'
 AWS_S3_REGION_NAME = 'us-east-2'
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = '/media/'
+
+MEDIA_URL = "https:// neatnest.s3.amazonaws.com/media/"
 
 
 REST_FRAMEWORK = {
@@ -178,4 +181,4 @@ REST_FRAMEWORK = {
 }
 
 
-LAMBDA_API_URL = "https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
+LAMBDA_API_URL = "https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"

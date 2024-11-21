@@ -418,12 +418,16 @@ class Bank_Account(models.Model):
 
 #---------------------------------------------------------------------------------------------------------
 
+
 class Image(models.Model):
-    image = models.ImageField(upload_to='images/')  # The 'upload_to' path is relative to the S3 bucket
-    image_url = models.URLField(null=False) 
+    image_name = models.CharField(max_length=255)  # Original file name
+    s3_url = models.URLField(max_length=500, blank=True, null=True)  # URL of the image in S3
+    uploaded_at = models.DateTimeField(auto_now_add=True)  # Timestamp of upload
 
     def __str__(self):
-        return f'Image {self.id}'
+        return self.image_name
+    
+    
     
 #---------------------------------------------------------------------------------------------------------
 

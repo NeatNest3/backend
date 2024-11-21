@@ -23,6 +23,9 @@ from .firebase_messaging import *
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from .utils import get_eligible_providers, get_nearby_providers
+from botocore.exceptions import NoCredentialsError
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 import firebase_admin
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -395,8 +398,49 @@ class NearbyProvidersView(APIView):
 #    return render(request, 'main/upload_image.html')
 
 import requests
+import base64
 
+LAMBDA_URL = " https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
+
+@csrf_exempt
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
 def upload_image(request):
+    if request.method == 'POST' and request.FILES['image']:
+        image_file = request.FILES['image']
+        
+        # Read the image and encode it in base64
+        image_data = image_file.read()
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        
+        # Send the image to AWS Lambda for upload to S3
+        response = requests.post(
+            LAMBDA_URL,
+            json={
+                'image_base64': image_base64,
+                'file_name': image_file.name,
+                'content_type': image_file.content_type,
+            }
+        )
+
+        if response.status_code == 200:
+            # Get the URL of the uploaded image from the Lambda response
+            response_data = response.json()
+            s3_url = response_data.get('url')
+
+            # Save the image metadata in your Django model
+            Image.objects.create(
+                file_name=image_file.name,
+                s3_url=s3_url
+            )
+
+            # Return success response
+            return JsonResponse({'message': 'Image uploaded successfully', 'url': s3_url}, status=200)
+        else:
+            return JsonResponse({'error': 'Failed to upload image to S3'}, status=500)
+
+    return render(request, 'upload_image.html')
+    
     if request.method == 'POST':
         file = request.FILES.get('file')
         if not file:

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class FirebaseAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
         # Extract the Authorization header
-        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        auth_header = request.headers.get('Authorization')
         
         if not auth_header:
             return None  # No token provided, let other authentication methods handle it

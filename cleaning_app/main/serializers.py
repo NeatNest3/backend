@@ -4,25 +4,58 @@ from .models import *
 
 
 class UserSerializer(serializers.ModelSerializer):
+    # Required fields from the model
+    firebase_uid = serializers.CharField(required=True)
+    phone = serializers.CharField(required=True, max_length=25)
+    date_of_birth = serializers.DateField(required=True)
+    allergies = serializers.ListField(child=serializers.CharField(), required=False)
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='customer', required=False)
+    preferred_name = serializers.CharField(max_length=25, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ('__all__')
+        fields = ('username', 'email', 'password', 'firebase_uid', 'phone', 'date_of_birth', 
+                  'role', 'allergies', 'preferred_name')
 
+        extra_kwargs = {
+            'password': {'write_only': True},  # Make password write-only for security
+        }
 
+    def create(self, validated_data):
+        # Extract the password and other fields separately
+        password = validated_data.get('password')
+        firebase_uid = validated_data.get('firebase_uid')
+
+        # Create the user using the validated data
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=password,
+            firebase_uid=firebase_uid,
+            phone=validated_data['phone'],
+            date_of_birth=validated_data['date_of_birth'],
+            role=validated_data.get('role', 'customer'),
+            allergies=validated_data.get('allergies', []),  # Default to an empty list if not provided
+            preferred_name=validated_data.get('preferred_name', '')  # Default to an empty string if not provided
+        )
+        return user
+
+    def validate_allergies(self, value):
+        #Custom validation for allergies
+        
+        valid_allergies = User.ALLERGY_CHOICES
+        for allergy in value:
+            if allergy not in dict(valid_allergies).keys():
+                raise serializers.ValidationError(f"{allergy} is not a valid allergy choice.")
+        return value
+    
 class CustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
         fields = '__all__'
 
-    def create(self, validated_data):
 
-        user = validated_data.get('user')
-        if not user:
-            raise serializers.ValidationError("User ID is required to create a customer.")
-        
-        return super().create(validated_data)
 
 class SpecialtySerializer(serializers.ModelSerializer):
 

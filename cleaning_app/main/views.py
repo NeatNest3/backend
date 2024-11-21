@@ -1,4 +1,5 @@
 import boto3
+import logging
 from .models import *
 from .serializers import *
 from django.http import HttpResponse
@@ -15,22 +16,34 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 # from .firebase import db
-from firebase_admin import auth as firebase_auth, firestore
+from firebase_admin import auth, credentials as firebase_auth, firestore
 from .models import DeviceToken
 from cleaning_app.cleaning_app.local_settings import messaging
 from .firebase_messaging import *
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from .utils import get_eligible_providers, get_nearby_providers
+import firebase_admin
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+
+logger = logging.getLogger(__name__)
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
+
+if not firebase_admin._apps:
+    cred = firebase_admin.credentials.Certificate(r'C:\Users\dilll\Backend\backend\cleaning_app\credentials\neatnest-308c4-firebase-adminsdk-8bt91-be2f5d5a1b.json')  # Path to your Firebase service account key
+    firebase_admin.initialize_app(cred)
 
 #---------------------------------------------------------------------------------------------------------
 # Auth View
 
 class VerifyFirebaseToken(APIView):
-    permission_classes = [IsAuthenticated]  # You can set this to allow public access if not using session authentication
+
+    permission_classes =[AllowAny]
+
 
     def post(self, request):
         # Retrieve the Firebase ID token from the Authorization header
@@ -46,13 +59,12 @@ class VerifyFirebaseToken(APIView):
             decoded_token = firebase_auth.verify_id_token(id_token)
             firebase_uid = decoded_token['uid']
             
-            # Get the user associated with the Firebase UID (you can store it as `firebase_uid` field in your User model)
+            # Get the user associated with the Firebase UID
             user = get_user_model().objects.filter(firebase_uid=firebase_uid).first()
             if user:
-                # Optionally, you could set the session or return the user data
                 return Response({
                     'message': 'User authenticated successfully',
-                    'user': {'id': user.id, 'username': user.username},
+                    'user': {'id': user.id, 'username': user.username, 'firebase_uid': user.firebase_uid},
                 })
             else:
                 return Response({'error': 'User does not exist in Django.'}, status=status.HTTP_404_NOT_FOUND)
@@ -64,58 +76,85 @@ class VerifyFirebaseToken(APIView):
 #---------------------------------------------------------------------------------------------------------
 # User Views
 
-
 class CreateUserFromFirebase(APIView):
-    permission_classes = [IsAuthenticated]  # Ensure the request is authenticated via Firebase
+    
+    permission_classes =[AllowAny]
 
     def post(self, request):
-        # Get Firebase ID token from the Authorization header
-        id_token = request.headers.get('Authorization').split(' ')[1]  # Expecting "Bearer <id_token>"
-
+        # Log incoming headers and metadata for debugging
         try:
-            # Verify the Firebase ID token
-            decoded_token = firebase_auth.verify_id_token(id_token)
-            firebase_uid = decoded_token['uid']  # Firebase UID of the user
+            # Step 1: Extract the Firebase ID token from the Authorization header
+            auth_header = request.headers.get('Authorization')
+            logger.debug('HEADERS:', auth_header)
+            if not auth_header or not auth_header.startswith('Bearer '):
+                logger.debug("Authorization header missing or malformed")
+                return Response({"error": "Authorization header missing or malformed"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if the user already exists in Django by Firebase UID
-            if User.objects.filter(username=firebase_uid).exists():
+            id_token = auth_header.split('Bearer ')[1]
+            logger.debug(f"Extracted ID Token: {id_token}")
+
+            # Step 2: Verify the ID token with Firebase Admin SDK
+            decoded_token = auth.verify_id_token(id_token)
+            firebase_uid = decoded_token['uid']  # This is the Firebase UID of the user
+            logger.debug(f"Decoded Firebase UID: {firebase_uid}")
+
+        
+
+            # Step 3: Check if the user already exists by Firebase UID
+            if User.objects.filter(firebase_uid=firebase_uid).exists():
+                logger.debug(f"User with Firebase UID {firebase_uid} already exists")
                 return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create the new user in Django with data from Firebase
+            # Step 4: Create a new user in Django based on the data in the request
             user_data = request.data
+            logger.debug(f"User data received: {user_data}")
+            
             user = User.objects.create_user(
-                username=user_data['username'],  # Use Firebase UID as the username
-                first_name=user_data['first_name'],
-                last_name=user_data['last_name'],
-                preffered_name=user_data['preffered_name'],
+                username=user_data['email'],  # Firebase UID is used as the username
+                first_name=user_data.get('first_name', ''),
+                last_name=user_data.get('last_name', ''),
+                preferred_name=user_data.get('preferred_name', ''),
                 phone=user_data['phone'],
                 email=user_data['email'],
-                password=user_data['password'],  
-                allergies=user_data('allergies', []),
+                password=user_data['password'],  # If you want, you can hash the password securely
+                allergies=user_data.get('allergies', []),  # Default to empty list if not provided
                 date_of_birth=user_data['date_of_birth'],
-                role=user_data['role'],
-                firebase_uid=user_data['firebase_uid']
+                role=user_data.get('role', 'customer'),  # Default to 'customer' if role is not provided
+                firebase_uid=firebase_uid  # Store the Firebase UID to link this user with Firebase
             )
 
+            logger.debug(f"User taken in: {user}")
+            # Step 5: Serialize the user data to return in the response
             user_serializer = UserSerializer(user)
+            logger.debug(f"User created successfully: {user_serializer.data}")
 
             return Response(user_serializer.data, status=status.HTTP_201_CREATED)
-        
-        except ValidationError as e:
-            return Response({"error": f"Validation failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        except KeyError as e:
+            # If any required field is missing from the request body
+            logger.error(f"Missing field in request: {str(e)}")
+            return Response({"error": f"Missing field: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        except auth.InvalidIdTokenError as e:
+            # If the Firebase ID token is invalid
+            logger.error(f"Invalid Firebase ID token: {str(e)}")
+            return Response({"error": "Invalid Firebase ID token"}, status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
-            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            # Catch all other exceptions
+            logger.error(f"An unexpected error occurred: {str(e)}")
+            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 class UserDetails(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views

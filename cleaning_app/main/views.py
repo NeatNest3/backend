@@ -86,9 +86,19 @@ class CreateUserFromFirebase(APIView):
     def post(self, request):
         # Log incoming headers and metadata for debugging
         try:
+            
+            # Log the raw Authorization header from META for extra debugging
+            raw_auth_header = request.META.get('HTTP_AUTHORIZATION', None)
+            logger.debug("Raw Authorization Header from META: %s", raw_auth_header)
+            message = "1. No header returned" if raw_auth_header is None else "SUCCESS"
+            logger.debug(message)
+            
             # Step 1: Extract the Firebase ID token from the Authorization header
             auth_header = request.headers.get('Authorization')
-            logger.debug('HEADERS:', auth_header)
+            logger.debug("Extracted Authorization Header: %s", auth_header)
+            message = "2. No header returned" if auth_header is None else "SUCCESS"
+            logger.debug(message)        
+
             if not auth_header or not auth_header.startswith('Bearer '):
                 logger.debug("Authorization header missing or malformed")
                 return Response({"error": "Authorization header missing or malformed"}, status=status.HTTP_400_BAD_REQUEST)

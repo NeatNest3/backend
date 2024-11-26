@@ -5,11 +5,41 @@ from .models import Service_Provider, Home, Customer, User
 from .serializers import Service_Provider_DistanceSerializer
 from firebase_admin import auth as firebase_auth
 from rest_framework import authentication, exceptions
+from django.contrib.auth import authenticate
+import json
+import jwt
+import requests
 import logging
 
 logger = logging.getLogger(__name__)
 
 
+
+
+# auth0authorization
+
+
+def jwt_get_username_from_payload_handler(payload):
+    username = payload.get('sub').replace('|', '.')
+    authenticate(remote_user=username)
+    return username
+
+
+
+
+def jwt_decode_token(token):
+    header = jwt.get_unverified_header(token)
+    jwks = requests.get('https://{}/.well-known/jwks.json'.format('dev-jbo3q8bi8aocdmxp.us.auth0.com')).json()
+    public_key = None
+    for jwk in jwks['keys']:
+        if jwk['kid'] == header['kid']:
+            public_key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+
+    if public_key is None:
+        raise Exception('Public key not found.')
+
+    issuer = 'https://{}/'.format('dev-jbo3q8bi8aocdmxp.us.auth0.com')
+    return jwt.decode(token, public_key, audience='{yourApiIdentifier}', issuer=issuer, algorithms=['RS256'])
 #---------------------------------------------------------------------------------------------------------
 
 

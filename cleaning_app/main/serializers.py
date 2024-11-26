@@ -5,7 +5,6 @@ from .models import *
 
 class UserSerializer(serializers.ModelSerializer):
     # Required fields from the model
-    firebase_uid = serializers.CharField(required=True)
     phone = serializers.CharField(required=True, max_length=25)
     date_of_birth = serializers.DateField(required=True)
     allergies = serializers.ListField(child=serializers.CharField(), required=False)
@@ -14,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'firebase_uid', 'phone', 'date_of_birth', 
+        fields = ('username', 'email', 'password', 'phone', 'date_of_birth', 
                   'role', 'allergies', 'preferred_name')
 
         extra_kwargs = {

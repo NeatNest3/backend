@@ -130,7 +130,7 @@ class Service_Provider(models.Model):
     flexible_rate = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
 
     # Pet friendly: Boolean field indicating if the cleaner is comfortable with pets
-    pet_friendly = models.BooleanField(default=False)
+    pet_friendly = models.BooleanField(default=True)
 
     # Rating: Float rating with values from 1.0 to 5.0
     rating = models.FloatField(validators=[MinValueValidator(1.0), MaxValueValidator(5.0)], blank=True, null=True)

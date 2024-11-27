@@ -5,7 +5,6 @@ from .models import *
 
 class UserSerializer(serializers.ModelSerializer):
     # Required fields from the model
-    firebase_uid = serializers.CharField(required=True)
     phone = serializers.CharField(required=True, max_length=25)
     date_of_birth = serializers.DateField(required=True)
     allergies = serializers.ListField(child=serializers.CharField(), required=False)
@@ -14,26 +13,19 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'firebase_uid', 'phone', 'date_of_birth', 
-                  'role', 'allergies', 'preferred_name']
+        fields = ('username', 'email', 'password', 'phone', 'date_of_birth', 
+                  'role', 'allergies', 'preferred_name')
 
 
     def create(self, validated_data):
-        # Extract the password and other fields separately
-        firebase_uid = validated_data.get('firebase_uid')
 
         # Create the user using the validated data
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            # firebase_uid=firebase_uid,
             date_of_birth=validated_data['date_of_birth'],
-            # role=validated_data.get('role', 'customer'),
-            # allergies=validated_data.get('allergies', []),  # Default to an empty list if not provided
-            # preferred_name=validated_data.get('preferred_name', '')  # Default to an empty string if not provided
         )
         
-        user.firebase_uid = firebase_uid
         user.phone = validated_data['phone']
         user.role = validated_data['role',  'customer']
         user.allergies = validated_data['allergies', []]

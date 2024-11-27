@@ -24,7 +24,8 @@ app_name = 'main'
 
 urlpatterns = [
     path("", homepage, name="homepage"),
-    path('api/verify_firebase_token/', VerifyFirebaseToken.as_view(), name='verify-firebase-token'),
+    # path('api/verify_token/', VerifyToken.as_view(), name='verify-firebase-token'),
+    # path("create-user/", CreateUserFromFirebase.as_view(), name='create-user'),
     path("users/", UserList.as_view(), name='user-list'),
     path("users/<int:pk>/", UserDetails.as_view(), name='user-details'),
     path("customers/", CustomerList.as_view(), name='customer-list'),

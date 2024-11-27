@@ -5,6 +5,10 @@ from .models import Service_Provider, Home, Customer, User
 from .serializers import Service_Provider_DistanceSerializer
 from firebase_admin import auth as firebase_auth
 from rest_framework import authentication, exceptions
+from django.contrib.auth import authenticate
+import json
+import jwt
+import requests
 import logging
 import jwt
 from jwt import PyJWKClient
@@ -15,105 +19,131 @@ from django.contrib.auth import get_user_model
 logger = logging.getLogger(__name__)
 
 
+
+
+# auth0authorization
+
+
+def jwt_get_username_from_payload_handler(payload):
+    username = payload.get('sub').replace('|', '.')
+    authenticate(remote_user=username)
+    return username
+
+
+
+
+def jwt_decode_token(token):
+    header = jwt.get_unverified_header(token)
+    jwks = requests.get('https://{}/.well-known/jwks.json'.format('dev-jbo3q8bi8aocdmxp.us.auth0.com')).json()
+    public_key = None
+    for jwk in jwks['keys']:
+        if jwk['kid'] == header['kid']:
+            public_key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+
+    if public_key is None:
+        raise Exception('Public key not found.')
+
+    issuer = 'https://{}/'.format('dev-jbo3q8bi8aocdmxp.us.auth0.com')
+    return jwt.decode(token, public_key, audience='{yourApiIdentifier}', issuer=issuer, algorithms=['RS256'])
 #---------------------------------------------------------------------------------------------------------
 
-FIREBASE_PUBLIC_KEYS_URL = "https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+# FIREBASE_PUBLIC_KEYS_URL = "https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com"
 
 
-class FirebaseAuthentication(authentication.BaseAuthentication):
-    def authenticate(self, request):
-        # Extract the Authorization header
-        auth_header = request.headers.get('Authorization')
+# class FirebaseAuthentication(authentication.BaseAuthentication):
+#     def authenticate(self, request):
+#         # Extract the Authorization header
+#         auth_header = request.headers.get('Authorization')
         
-        if not auth_header:
-            return None  # No token provided, let other authentication methods handle it
+#         if not auth_header:
+#             return None  # No token provided, let other authentication methods handle it
         
-        try:
-            # Split the header to get the token
-            token = auth_header.split(" ")[1]
+#         try:
+#             # Split the header to get the token
+#             token = auth_header.split(" ")[1]
             
-            # Verify the Firebase ID token manually
-            decoded_token = verify_firebase_id_token(token)
-            firebase_uid = decoded_token['uid']
+#             # Verify the Firebase ID token manually
+#             decoded_token = verify_firebase_id_token(token)
+#             firebase_uid = decoded_token['uid']
             
-            # Try to retrieve the user based on the Firebase UID
-            user = self.get_or_create_user(firebase_uid)
+#             # Try to retrieve the user based on the Firebase UID
+#             user = self.get_or_create_user(firebase_uid)
 
-            return (user, None)  # Return the authenticated user and None for the auth token
+#             return (user, None)  # Return the authenticated user and None for the auth token
 
-        except Exception as e:
-            # Raise an authentication error if the token is invalid or any other error occurs
-            raise exceptions.AuthenticationFailed(f"Token authentication failed: {str(e)}")
+#         except Exception as e:
+#             # Raise an authentication error if the token is invalid or any other error occurs
+#             raise exceptions.AuthenticationFailed(f"Token authentication failed: {str(e)}")
 
-    def get_or_create_user(self, firebase_uid):
-        """
-        Retrieve an existing user or create a new one based on the Firebase UID.
-        This assumes that you've extended the Django User model or added a custom field for the Firebase UID.
-        """
-        try:
-            # Check if a user already exists with the Firebase UID
-            user = get_user_model().objects.get(firebase_uid=firebase_uid)
-        except get_user_model().DoesNotExist:
-            # If no user exists, create a new one
-            user = get_user_model().objects.create_user(
-                username=firebase_uid, 
-                email=f"{firebase_uid}@firebase.com",  # Create a default email, adjust as needed
-                firebase_uid=firebase_uid
-            )
-            user.save()
+#     def get_or_create_user(self, firebase_uid):
+#         """
+#         Retrieve an existing user or create a new one based on the Firebase UID.
+#         This assumes that you've extended the Django User model or added a custom field for the Firebase UID.
+#         """
+#         try:
+#             # Check if a user already exists with the Firebase UID
+#             user = get_user_model().objects.get(firebase_uid=firebase_uid)
+#         except get_user_model().DoesNotExist:
+#             # If no user exists, create a new one
+#             user = get_user_model().objects.create_user(
+#                 username=firebase_uid, 
+#                 email=f"{firebase_uid}@firebase.com",  # Create a default email, adjust as needed
+#                 firebase_uid=firebase_uid
+#             )
+#             user.save()
 
-        return user
+#         return user
 
 #---------------------------------------------------------------------------------------------------------
 
-def verify_firebase_id_token(id_token):
-    """
-    Verify Firebase ID Token using Firebase's public keys.
-    :param id_token: The Firebase ID token to verify
-    :return: The decoded payload if the token is valid
-    :raises: jwt.ExpiredSignatureError or jwt.PyJWTError on failure
-    """
-    try:
-        # Get Firebase public keys
-        response = requests.get(FIREBASE_PUBLIC_KEYS_URL)
-        response.raise_for_status()
-        keys = response.json()
+# def verify_firebase_id_token(id_token):
+#     """
+#     Verify Firebase ID Token using Firebase's public keys.
+#     :param id_token: The Firebase ID token to verify
+#     :return: The decoded payload if the token is valid
+#     :raises: jwt.ExpiredSignatureError or jwt.PyJWTError on failure
+#     """
+#     try:
+#         # Get Firebase public keys
+#         response = requests.get(FIREBASE_PUBLIC_KEYS_URL)
+#         response.raise_for_status()
+#         keys = response.json()
 
-        # Decode the token header to get the kid (key ID)
-        unverified_header = jwt.get_unverified_header(id_token)
-        if unverified_header is None or 'kid' not in unverified_header:
-            raise ValueError('Invalid token: Missing kid in header')
+#         # Decode the token header to get the kid (key ID)
+#         unverified_header = jwt.get_unverified_header(id_token)
+#         if unverified_header is None or 'kid' not in unverified_header:
+#             raise ValueError('Invalid token: Missing kid in header')
 
-        kid = unverified_header['kid']
+#         kid = unverified_header['kid']
 
-        # Find the corresponding public key for the kid
-        if kid not in keys:
-            raise ValueError('Invalid token: Invalid kid')
+#         # Find the corresponding public key for the kid
+#         if kid not in keys:
+#             raise ValueError('Invalid token: Invalid kid')
 
-        # Get the public key
-        public_key = keys[kid]
+#         # Get the public key
+#         public_key = keys[kid]
 
-        # Decode and verify the token
-        decoded_token = jwt.decode(
-            id_token,
-            public_key,
-            algorithms=["RS256"],
-            audience=FIREBASE_PROJECT_ID,  
-            issuer=f"https://securetoken.google.com/{FIREBASE_PROJECT_ID}",  # Firebase token issuer
-        )
+#         # Decode and verify the token
+#         decoded_token = jwt.decode(
+#             id_token,
+#             public_key,
+#             algorithms=["RS256"],
+#             audience=FIREBASE_PROJECT_ID,  
+#             issuer=f"https://securetoken.google.com/{FIREBASE_PROJECT_ID}",  # Firebase token issuer
+#         )
 
-        # Check if the token is expired
-        if decoded_token['exp'] < datetime.now().timestamp():
-            raise jwt.ExpiredSignatureError('Token has expired')
+#         # Check if the token is expired
+#         if decoded_token['exp'] < datetime.now().timestamp():
+#             raise jwt.ExpiredSignatureError('Token has expired')
 
-        return decoded_token
+#         return decoded_token
 
-    except jwt.ExpiredSignatureError:
-        raise ValueError("Token has expired")
-    except jwt.PyJWTError as e:
-        raise ValueError(f"Invalid token: {str(e)}")
-    except Exception as e:
-        raise ValueError(f"Error verifying token: {str(e)}")
+#     except jwt.ExpiredSignatureError:
+#         raise ValueError("Token has expired")
+#     except jwt.PyJWTError as e:
+#         raise ValueError(f"Invalid token: {str(e)}")
+#     except Exception as e:
+#         raise ValueError(f"Error verifying token: {str(e)}")
 
 #---------------------------------------------------------------------------------------------------------
 

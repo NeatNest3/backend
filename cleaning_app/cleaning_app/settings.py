@@ -45,7 +45,7 @@ SECRET_KEY = 'django-insecure-g4#_*pbb@omzq$rc3r=@7b#vaa2l+ahrqnas*p^o28%u$g%!2%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = [ '192.168.1.15', 'localhost', '127.0.0.1', '0.0.0.0:8000' ]
+ALLOWED_HOSTS = [ '192.168.1.15' ]
 
 AUTH_USER_MODEL = 'main.User'
 
@@ -72,13 +72,14 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'cleaning_app.middleware.DebugMiddleware',
+    # 'cleaning_app.middleware.DebugMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 ]
 
@@ -182,3 +183,5 @@ REST_FRAMEWORK = {
 
 
 LAMBDA_API_URL = "https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
+
+FIREBASE_PROJECT_ID = "neatnest-308c4"

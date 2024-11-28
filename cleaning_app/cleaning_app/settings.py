@@ -48,9 +48,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g4#_*pbb@omzq$rc3r=@7b#vaa2l+ahrqnas*p^o28%u$g%!2%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = [ ]
+ALLOWED_HOSTS = [ '192.168.1.15', 'localhost', '127.0.0.1', '0.0.0.0:8000' ]
 
 AUTH_USER_MODEL = 'main.User'
 
@@ -77,11 +77,12 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'cleaning_app.middleware.DebugMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.RemoteUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -118,6 +119,24 @@ WSGI_APPLICATION = 'cleaning_app.cleaning_app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.RemoteUserBackend',
+]
+
+# apiexample/settings.py
+
+JWT_AUTH = {
+    'JWT_PAYLOAD_GET_USERNAME_HANDLER':
+        'cleaning_app.main.utils.jwt_get_username_from_payload_handler',
+    'JWT_DECODE_HANDLER':
+        'cleaning_app.main.utils.jwt_decode_token',
+    'JWT_ALGORITHM': 'RS256',
+    'JWT_AUDIENCE': '{https://neatnest.tech}',
+    'JWT_ISSUER': 'https://dev-jbo3q8bi8aocdmxp.us.auth0.com/',
+    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -170,21 +189,27 @@ except ImportError:
     pass
 
 
-AWS_ACCESS_KEY_ID = 'AKIA6NINTDPMKXSITS4F'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'cleaningapp'
+AWS_ACCESS_KEY_ID = 'AKIAXZEFHXWUJ577PGU7'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = ' neatnest'
 AWS_S3_REGION_NAME = 'us-east-2'
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = '/media/'
+
+MEDIA_URL = "https:// neatnest.s3.amazonaws.com/media/"
 
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'cleaning_app.main.utils.FirebaseAuthentication',
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -192,6 +217,8 @@ REST_FRAMEWORK = {
 }
 
 # Default Auth in rest framework (simplejwt) is to integrate AuthO for Authentication on the backend
+
+LAMBDA_API_URL = "https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),

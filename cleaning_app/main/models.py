@@ -22,6 +22,8 @@ class User(AbstractUser):
         ('fragrance', 'Fragrance'), ('SLS', 'SLS'), ('ammonia', 'Ammonia'), 
         ('bleach', 'Bleach'), ('other', 'Other')
     ]
+    
+    password = models.CharField(max_length=128, blank=True, null=True)
 
     #preffered name field for nicknames/preferences 
     preferred_name = models.CharField(max_length=25, blank=True, null=True)
@@ -40,7 +42,9 @@ class User(AbstractUser):
     date_of_birth = models.DateField(null=False, blank=False)
 
     # JSONField to store multiple allergy selections
-    allergies = models.JSONField(default=list, blank=False, null=False)
+    allergies = models.JSONField(default=list, blank=True, null=True)
+
+    firebase_uid = models.CharField(max_length=255, unique=True, null=True, blank=True)
 
     def allergy_validation(self):
         """Custom method to validate allergies."""
@@ -126,7 +130,7 @@ class Service_Provider(models.Model):
     flexible_rate = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
 
     # Pet friendly: Boolean field indicating if the cleaner is comfortable with pets
-    pet_friendly = models.BooleanField(default=False)
+    pet_friendly = models.BooleanField(default=True)
 
     # Rating: Float rating with values from 1.0 to 5.0
     rating = models.FloatField(validators=[MinValueValidator(1.0), MaxValueValidator(5.0)], blank=True, null=True)
@@ -414,12 +418,16 @@ class Bank_Account(models.Model):
 
 #---------------------------------------------------------------------------------------------------------
 
+
 class Image(models.Model):
-    image = models.ImageField(upload_to='images/')  # The 'upload_to' path is relative to the S3 bucket
-    image_url = models.URLField(null=False) 
+    image_name = models.CharField(max_length=255)  # Original file name
+    s3_url = models.URLField(max_length=500, blank=True, null=True)  # URL of the image in S3
+    uploaded_at = models.DateTimeField(auto_now_add=True)  # Timestamp of upload
 
     def __str__(self):
-        return f'Image {self.id}'
+        return self.image_name
+    
+    
     
 #---------------------------------------------------------------------------------------------------------
 

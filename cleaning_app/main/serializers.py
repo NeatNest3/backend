@@ -16,27 +16,23 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'password', 'phone', 'date_of_birth', 
                   'role', 'allergies', 'preferred_name')
 
-        extra_kwargs = {
-            'password': {'write_only': True},  # Make password write-only for security
-        }
 
     def create(self, validated_data):
-        # Extract the password and other fields separately
-        password = validated_data.get('password')
-        firebase_uid = validated_data.get('firebase_uid')
 
         # Create the user using the validated data
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            password=password,
-            firebase_uid=firebase_uid,
-            phone=validated_data['phone'],
             date_of_birth=validated_data['date_of_birth'],
-            role=validated_data.get('role', 'customer'),
-            allergies=validated_data.get('allergies', []),  # Default to an empty list if not provided
-            preferred_name=validated_data.get('preferred_name', '')  # Default to an empty string if not provided
         )
+        
+        user.phone = validated_data['phone']
+        user.role = validated_data['role',  'customer']
+        user.allergies = validated_data['allergies', []]
+        user.preferred_name = validated_data['preffered_name', '']
+        
+        user.save()
+        
         return user
 
     def validate_allergies(self, value):

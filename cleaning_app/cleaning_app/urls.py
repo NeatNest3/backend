@@ -20,4 +20,6 @@ from django.urls import path, include
 urlpatterns = [
     path('', include('cleaning_app.main.urls')),
     path('admin/', admin.site.urls),
+    # path("create-user/", CreateUserFromFirebase.as_view(), name='create-user'),
+
 ]

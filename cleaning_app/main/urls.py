@@ -18,15 +18,14 @@ from django.urls import path
 from .views import *
 #from .views import upload_image
 from . import views
-from . import views
 
 
 app_name = 'main'
 
 urlpatterns = [
     path("", homepage, name="homepage"),
-    path('api/verify_token/', VerifyToken.as_view(), name='verify-firebase-token'),
-    path("create-user/", CreateUserFromFirebase.as_view(), name='create-user'),
+    # path('api/verify_token/', VerifyToken.as_view(), name='verify-firebase-token'),
+    # path("create-user/", CreateUserFromFirebase.as_view(), name='create-user'),
     path("users/", UserList.as_view(), name='user-list'),
     path("users/<int:pk>/", UserDetails.as_view(), name='user-details'),
     path("customers/", CustomerList.as_view(), name='customer-list'),

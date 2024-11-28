@@ -152,7 +152,7 @@ def create_user_with_role(request):
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @requires_scope('read:users')  # Enforce scope for accessing user data
     def get_queryset(self):

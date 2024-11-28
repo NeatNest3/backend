@@ -44,7 +44,6 @@ class User(AbstractUser):
     # JSONField to store multiple allergy selections
     allergies = models.JSONField(default=list, blank=True, null=True)
 
-    firebase_uid = models.CharField(max_length=255, unique=True, null=True, blank=True)
 
     def allergy_validation(self):
         """Custom method to validate allergies."""

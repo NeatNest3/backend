@@ -3,17 +3,15 @@ from django.conf import settings
 from django.db.models import Q
 from .models import Service_Provider, Home, Customer, User
 from .serializers import Service_Provider_DistanceSerializer
-from firebase_admin import auth as firebase_auth
+# from firebase_admin import auth as firebase_auth
 from rest_framework import authentication, exceptions
 from django.contrib.auth import authenticate
 import json
 import jwt
-import requests
 import logging
 import jwt
 from jwt import PyJWKClient
 from datetime import datetime
-from ..cleaning_app.settings import FIREBASE_PROJECT_ID
 from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)

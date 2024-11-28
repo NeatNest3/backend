@@ -6,7 +6,6 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0003_alter_image_image_url'),
         ('main', '0004_alter_user_allergies'),
     ]
 

@@ -2,6 +2,7 @@ import boto3
 import logging
 from .models import *
 from .serializers import *
+from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework import status
@@ -14,7 +15,7 @@ from .models import Image
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from .models import DeviceToken
+# from .models import DeviceToken
 from cleaning_app.cleaning_app.local_settings import messaging
 from .firebase_messaging import *
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -37,63 +38,71 @@ def homepage(request):
 
 #---------------------------------------------------------------------------------------------------------
 
-# auth0authorization
+# # auth0authorization
 
 
-def get_token_auth_header(request):
-    """Obtains the Access Token from the Authorization Header
-    """
-    auth = request.META.get("HTTP_AUTHORIZATION", None)
-    parts = auth.split()
-    token = parts[1]
+# def get_token_auth_header(request):
+#     """Obtains the Access Token from the Authorization Header
+#     """
+#     auth = request.META.get("HTTP_AUTHORIZATION", None)
+#     if not auth:
+#         raise ValueError('Authorization header is missing')
+    
+#     parts = auth.split()
+#     if parts[0].lower() != 'bearer':
+#         raise ValueError('Authorization header must start with Bearer')
+    
+#     token = parts[1]
 
-    return token
+#     return token
 
-def requires_scope(required_scope):
-    """Determines if the required scope is present in the Access Token
-    Args:
-        required_scope (str): The scope required to access the resource
-    """
-    def require_scope(f):
-        @wraps(f)
-        def decorated(*args, **kwargs):
-            token = get_token_auth_header(args[0])
-            decoded = jwt.decode(token, verify=False)
-            if decoded.get("scope"):
-                token_scopes = decoded["scope"].split()
-                for token_scope in token_scopes:
-                    if token_scope == required_scope:
-                        return f(*args, **kwargs)
-            response = JsonResponse({'message': 'You don\'t have access to this resource'})
-            response.status_code = 403
-            return response
-        return decorated
-    return require_scope
+# def requires_scope(required_scope):
+#     """Determines if the required scope is present in the Access Token
+#     Args:
+#         required_scope (str): The scope required to access the resource
+#     """
+#     def require_scope(f):
+#         @wraps(f)
+#         def decorated(self, request, *args, **kwargs):
+#             try:
+#                 token = get_token_auth_header(request)
+#                 decoded = jwt.decode(token, verify=False)
+#                 if decoded.get("scope"):
+#                     token_scopes = decoded["scope"].split()
+#                     for token_scope in token_scopes:
+#                         if token_scope == required_scope:
+#                             return f(self, request, *args, **kwargs)
+#             except Exception as e:
+#                     response = JsonResponse({'message': f'Error: {str(e)}'})
+#                     response.status_code = 403
+#                     return response                  
+#         return decorated
+#     return require_scope
 
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def public(request):
-    """A public endpoint accessible without authentication."""
-    return JsonResponse({'message': 'Hello from a public endpoint! You don\'t need to be authenticated to see this.'})
+# @api_view(['GET'])
+# @permission_classes([AllowAny])
+# def public(request):
+#     """A public endpoint accessible without authentication."""
+#     return JsonResponse({'message': 'Hello from a public endpoint! You don\'t need to be authenticated to see this.'})
 
-@api_view(['GET'])
-def private(request):
-    """A private endpoint accessible only with authentication."""
-    return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
+# @api_view(['GET'])
+# def private(request):
+#     """A private endpoint accessible only with authentication."""
+#     return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
 
-@api_view(['GET'])
-@requires_scope('read:messages')
-def private_scoped(request):
-    """A private endpoint accessible only with a specific scope."""
-    return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
+# @api_view(['GET'])
+# @requires_scope('read:messages')
+# def private_scoped(request):
+#     """A private endpoint accessible only with a specific scope."""
+#     return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
 
 
 #---------------------------------------------------------------------------------------------------------
-# User Views
+#User Views
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+
 def create_user_with_role(request):
     """
     Create a user with a role. Depending on the role, create a corresponding
@@ -149,21 +158,24 @@ def create_user_with_role(request):
         return Response(user_serializer.data, status=status.HTTP_201_CREATED)
 
 
-class UserList(generics.ListCreateAPIView):
+class UserList(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = []
 
-    @requires_scope('read:users')  # Enforce scope for accessing user data
-    def get_queryset(self):
-        # Optionally, return all users or filter based on roles
-        return User.objects.all()
+    # @requires_scope('read:users')  # Enforce scope for accessing user data
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     if not user.is_superuser:
+    #         return User.objects.filter(id=user.id)
+    #     # Optionally, return all users or filter based on roles
+    #     return User.objects.all()
 
 
-class UserDetails(generics.RetrieveUpdateDestroyAPIView):
+class UserDetails(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_object(self):
         user = self.request.user
@@ -172,14 +184,14 @@ class UserDetails(generics.RetrieveUpdateDestroyAPIView):
             return User.objects.get(pk=user.pk)
         return super().get_object()  # Admins can access any user
 
-    @requires_scope('read:user_details')  # Optional: Enforce scope for access
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+    # @requires_scope('read:user_details')  # Optional: Enforce scope for access
+    # def retrieve(self, request, *args, **kwargs):
+    #     return super().retrieve(request, *args, **kwargs)
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
 
-class CustomerList(generics.ListCreateAPIView):
+class CustomerList(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     # permission_classes = [IsAuthenticated]
@@ -193,7 +205,7 @@ class CustomerList(generics.ListCreateAPIView):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
+class CustomerDetails(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     # permission_classes = [IsAuthenticated]
@@ -201,12 +213,12 @@ class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
 
-class SpecialtyList(generics.ListCreateAPIView):
+class SpecialtyList(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
     # permission_classes = [IsAuthenticated]
 
-class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
+class SpecialtyDetails(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
     # permission_classes = [IsAuthenticated]
@@ -214,10 +226,10 @@ class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views
 
-class Service_ProviderList(generics.ListCreateAPIView):
+class Service_ProviderList(viewsets.ModelViewSet):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def perform_create(self, serializer):
         # Here, 'user' should be included in the validated data sent from the frontend.
@@ -228,15 +240,15 @@ class Service_ProviderList(generics.ListCreateAPIView):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-class Service_ProviderDetails(generics.RetrieveUpdateDestroyAPIView):
+class Service_ProviderDetails(viewsets.ModelViewSet):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
 
-class JobHistoryList(generics.ListAPIView):
+class JobHistoryList(viewsets.ModelViewSet):
     serializer_class = JobSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         service_provider_id = self.kwargs['pk']
@@ -246,19 +258,19 @@ class JobHistoryList(generics.ListAPIView):
 #---------------------------------------------------------------------------------------------------------
 # Home Views
 
-class HomeList(generics.ListCreateAPIView):
+class HomeList(viewsets.ModelViewSet):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class HomeDetails(generics.RetrieveUpdateDestroyAPIView):
+class HomeDetails(viewsets.ModelViewSet):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class HomeHistoryList(generics.ListAPIView):
+class HomeHistoryList(viewsets.ModelViewSet):
     serializer_class = JobSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         home_id = self.kwargs['pk']
@@ -267,131 +279,131 @@ class HomeHistoryList(generics.ListAPIView):
 #---------------------------------------------------------------------------------------------------------
 # Room Views
 
-class RoomList(generics.ListCreateAPIView):
+class RoomList(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
+class RoomDetails(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
 #---------------------------------------------------------------------------------------------------------
 # Job Views
 
-class JobList(generics.ListCreateAPIView):
+class JobList(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class JobDetails(generics.RetrieveUpdateDestroyAPIView):
+class JobDetails(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = []
 
 #---------------------------------------------------------------------------------------------------------
 # Availability Views
 
-class AvailabilityList(generics.ListCreateAPIView):
-    queryset = Availability.objects.all()
-    serializer_class = AvailabilitySerializer
-    # permission_classes = [IsAuthenticated]
+# class AvailabilityList(generics.ListCreateAPIView):
+#     queryset = Availability.objects.all()
+#     serializer_class = AvailabilitySerializer
+#     # permission_classes = [IsAuthenticated]
 
-class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Availability.objects.all()
-    serializer_class = AvailabilitySerializer
-    # permission_classes = [IsAuthenticated]
+# class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Availability.objects.all()
+#     serializer_class = AvailabilitySerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Views
 
-class PaymentList(generics.ListCreateAPIView):
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    # permission_classes = [IsAuthenticated]
+# class PaymentList(generics.ListCreateAPIView):
+#     queryset = Payment.objects.all()
+#     serializer_class = PaymentSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    # permission_classes = [IsAuthenticated]
+# class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Payment.objects.all()
+#     serializer_class = PaymentSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Service Views
 
-class ServiceList(generics.ListCreateAPIView):
+class ServiceList(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
     # permission_classes = [IsAuthenticated]
 
-class ServiceDetails(generics.RetrieveUpdateDestroyAPIView):
+class ServiceDetails(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Task Views
-class TaskList(generics.ListCreateAPIView):
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
-    # permission_classes = [IsAuthenticated]
+# class TaskList(generics.ListCreateAPIView):
+#     queryset = Task.objects.all()
+#     serializer_class = TaskSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
-    # permission_classes = [IsAuthenticated]
+# class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Task.objects.all()
+#     serializer_class = TaskSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Review Views
 
-class ReviewList(generics.ListCreateAPIView):
+class ReviewList(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     # permission_classes = [IsAuthenticated]
 
-class ReviewDetails(generics.RetrieveUpdateDestroyAPIView):
+class ReviewDetails(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Method Views
-class Payment_MethodList(generics.ListCreateAPIView):
-    queryset = Payment_Method.objects.all()
-    serializer_class = Payment_MethodSerializer
-    # permission_classes = [IsAuthenticated]
+# class Payment_MethodList(generics.ListCreateAPIView):
+#     queryset = Payment_Method.objects.all()
+#     serializer_class = Payment_MethodSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Payment_Method.objects.all()
-    serializer_class = Payment_MethodSerializer
-    # permission_classes = [IsAuthenticated]
+# class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Payment_Method.objects.all()
+#     serializer_class = Payment_MethodSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Bank Account Views
 
-class Bank_AccountList(generics.ListCreateAPIView):
-    queryset = Bank_Account.objects.all()
-    serializer_class = Bank_AccountSerializer
-    # permission_classes = [IsAuthenticated]
+# class Bank_AccountList(generics.ListCreateAPIView):
+#     queryset = Bank_Account.objects.all()
+#     serializer_class = Bank_AccountSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Bank_Account.objects.all()
-    serializer_class = Bank_AccountSerializer
-    # permission_classes = [IsAuthenticated]
+# class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Bank_Account.objects.all()
+#     serializer_class = Bank_AccountSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 
-class NearbyProvidersView(APIView):
-    # permission_classes = [IsAuthenticated]
-    def get(self, request, home_id):
-        # Retrieve the specific Home instance based on home_id
-        customer_home = Home.objects.get(id=home_id)
-        # Pass the Home instance to get eligible providers
-        eligible_providers = get_eligible_providers(customer_home)
-        api_key = settings.LOCATIONIQ_API_KEY
-        # Pass only the customer_home ID and eligible providers to get_nearby_providers
-        nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
-        return Response(nearby_providers)
+# class NearbyProvidersView(APIView):
+#     # permission_classes = [IsAuthenticated]
+#     def get(self, request, home_id):
+#         # Retrieve the specific Home instance based on home_id
+#         customer_home = Home.objects.get(id=home_id)
+#         # Pass the Home instance to get eligible providers
+#         eligible_providers = get_eligible_providers(customer_home)
+#         api_key = settings.LOCATIONIQ_API_KEY
+#         # Pass only the customer_home ID and eligible providers to get_nearby_providers
+#         nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
+#         return Response(nearby_providers)
     
 #---------------------------------------------------------------------------------------------------------
 

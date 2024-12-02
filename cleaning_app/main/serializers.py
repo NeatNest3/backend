@@ -5,39 +5,39 @@ from .models import *
 
 class UserSerializer(serializers.ModelSerializer):
     # Required fields from the model
-    phone = serializers.CharField(required=True, max_length=25)
-    date_of_birth = serializers.DateField(required=True)
-    allergies = serializers.ListField(child=serializers.CharField(), required=False)
-    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='customer', required=False)
-    preferred_name = serializers.CharField(max_length=25, required=False, allow_blank=True)
+    # phone = serializers.CharField(required=True, max_length=25)
+    # date_of_birth = serializers.DateField(required=True)
+    # allergies = serializers.ListField(child=serializers.CharField(), required=False)
+    # role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='customer', required=False)
+    # preferred_name = serializers.CharField(max_length=25, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'phone', 'date_of_birth', 
-                  'role', 'allergies', 'preferred_name')
+        fields = [
+             'first_name', 'last_name', 'password', 'phone', 'email', 'date_of_birth', 
+             'allergies', 'role'
+         ]
 
 
     def create(self, validated_data):
-
         # Create the user using the validated data
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             date_of_birth=validated_data['date_of_birth'],
         )
-        
-        user.phone = validated_data['phone']
-        user.role = validated_data['role',  'customer']
-        user.allergies = validated_data['allergies', []]
-        user.preferred_name = validated_data['preffered_name', '']
+
+        # Assign optional fields with default values if not present
+        user.phone = validated_data.get('phone', '')  # Set default as empty string
+        user.role = validated_data.get('role', 'customer')  # Default to 'customer'
+        user.allergies = validated_data.get('allergies', [])  # Default to empty list
         
         user.save()
         
         return user
 
     def validate_allergies(self, value):
-        #Custom validation for allergies
-        
+        # Custom validation for allergies
         valid_allergies = User.ALLERGY_CHOICES
         for allergy in value:
             if allergy not in dict(valid_allergies).keys():
@@ -48,7 +48,7 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = '__all__'
+        fields = ('__all__')
 
 
 
@@ -106,51 +106,48 @@ class RoomSerializer(serializers.ModelSerializer):
         fields = ('__all__')
 
 
-class TaskSerializer(serializers.ModelSerializer):
+# class TaskSerializer(serializers.ModelSerializer):
 
-    job = serializers.PrimaryKeyRelatedField(read_only=True)
+#     job = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    class Meta:
-        model = Task
-        fields = '__all__'
+#     class Meta:
+#         model = Task
+#         fields = '__all__'
 
 class JobSerializer(serializers.ModelSerializer):
 
     rooms = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), many=True)
-    tasks = TaskSerializer(many=True)
+    # tasks = TaskSerializer(many=True)
 
     class Meta:
         model = Job
         fields = [
              'customer', 'service_provider', 'home', 'status', 'date', 'start_time', 
-             'end_time', 'total_cost', 'payment_made', 'special_requests', 'rooms', 'tasks'
+             'end_time', 'rooms', 'services'
          ]
     
 
     def create(self, validated_data):
         rooms_data = validated_data.pop('rooms')
-        tasks_data = validated_data.pop('tasks', [])
+        service_data = validated_data.pop('services')
         job = Job.objects.create(**validated_data)
 
         job.rooms.set(rooms_data)
 
-        for task_data in tasks_data:
-            Task.objects.create(job=job, **task_data)
-
         return job
 
-class AvailabilitySerializer(serializers.ModelSerializer):
+# class AvailabilitySerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Availability
-        fields = ('__all__')
+#     class Meta:
+#         model = Availability
+#         fields = ('__all__')
 
 
-class PaymentSerializer(serializers.ModelSerializer):
+# class PaymentSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Payment
-        fields = ('__all__')
+#     class Meta:
+#         model = Payment
+#         fields = ('__all__')
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -167,15 +164,15 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ('__all__')
 
 
-class Payment_MethodSerializer(serializers.ModelSerializer):
+# class Payment_MethodSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Payment_Method
-        fields = ('__all__')
+#     class Meta:
+#         model = Payment_Method
+#         fields = ('__all__')
 
 
-class Bank_AccountSerializer(serializers.ModelSerializer):
+# class Bank_AccountSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Bank_Account
-        fields = ('__all__')
+#     class Meta:
+#         model = Bank_Account
+#         fields = ('__all__')

@@ -486,3 +486,6 @@ def upload_image(request):
 #         return HttpResponse("Image Successfully Uploaded!")
 
         return JsonResponse({'message': 'File uploaded successfully'}, status=200)
+
+
+

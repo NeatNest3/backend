@@ -214,7 +214,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    ),                                        
 }
 
 # Default Auth in rest framework (simplejwt) is to integrate AuthO for Authentication on the backend

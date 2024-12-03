@@ -32,6 +32,7 @@ router.register('room', RoomList)
 router.register('job', JobList)
 router.register('service', ServiceList)
 router.register('review', ReviewList)
+#router.register('image',Image)
 # router.register('task', TaskList)
 
 
@@ -73,6 +74,6 @@ urlpatterns = [
 #     # path("payment-methods/<int:pk>/", Payment_MethodDetails.as_view(), name="payment-method-details"),
 #     # path("bank-accounts/", Bank_AccountList.as_view(), name="bank-account-list"),
 #     # path("bank-accounts/<int:pk>/", Bank_AccountDetails.as_view(), name="bank-account-details"),
-#     path('upload/', views.upload_image, name='upload_image'),
+     path('upload/', upload_image, name='upload_image'),
  ]
 

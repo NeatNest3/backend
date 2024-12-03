@@ -429,7 +429,7 @@ class ReviewDetails(viewsets.ModelViewSet):
 import requests
 import base64
 
-LAMBDA_URL = " https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
+LAMBDA_URL = "https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
 
 @csrf_exempt
 @api_view(['POST'])
@@ -476,7 +476,7 @@ def upload_image(request):
             return JsonResponse({'error': 'No file provided'}, status=400)
 
         # Set up data for the Lambda function
-        url = 'https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction'
+        url = 'https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction'
         files = {'file': file.read()}
         headers = {'Content-Type': 'application/octet-stream'}
 

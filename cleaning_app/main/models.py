@@ -22,8 +22,8 @@ class User(AbstractUser):
         ('fragrance', 'Fragrance'), ('SLS', 'SLS'), ('ammonia', 'Ammonia'), 
         ('bleach', 'Bleach'), ('other', 'Other')
     ]
-    first_name = models.CharField(max_length=25, blank=False, null=False, unique=True)
-    last_name = models.CharField(max_length=25, blank=False, null=False, unique=True)
+    first_name = models.CharField(max_length=25, blank=False, null=False, unique=False)
+    last_name = models.CharField(max_length=25, blank=False, null=False, unique=False)
     
     password = models.CharField(max_length=128, blank=True, null=True)
     phone = models.CharField(max_length=25, blank=False, null=False, unique=True)
@@ -236,7 +236,7 @@ class Job(models.Model):
 
     rooms  = models.ManyToManyField(Room, related_name="jobs")
     services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
-    # tasks = models.ManyToManyField('Task', related_name='job_tasks') # Many-to-many with Task
+    #tasks = models.ManyToManyField('Task', related_name='job_tasks') # Many-to-many with Task
 
     # Status and schedule fields
     status = models.CharField(max_length=20, choices=STATUS_TYPE_CHOICES, blank=False, null=False, default='pending')

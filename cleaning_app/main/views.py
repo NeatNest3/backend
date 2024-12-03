@@ -36,18 +36,25 @@ class VerifyFirebaseToken(APIView):
     permission_classes = [IsAuthenticated]  # You can set this to allow public access if not using session authentication
 
     def post(self, request):
+        print("Received request:", request)
+        print("Request headers:", request.headers)
         # Retrieve the Firebase ID token from the Authorization header
         token = request.headers.get('Authorization')
+        print("Authorization header:", token)
         
         if token is None or not token.startswith('Bearer '):
+            print("Authorization token is missing or invalid.")
             return Response({'error': 'Authorization token is missing or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
         
         id_token = token.split(' ')[1]  # Get the actual token without "Bearer"
+        print("Firebase ID token:", id_token)
         
         try:
             # Verify the Firebase ID token
             decoded_token = firebase_auth.verify_id_token(id_token)
+            print("Decoded Firebase token:", decoded_token)
             firebase_uid = decoded_token['uid']
+            print("Firebase UID:", firebase_uid)
             
             # Get the user associated with the Firebase UID (you can store it as `firebase_uid` field in your User model)
             user = get_user_model().objects.filter(firebase_uid=firebase_uid).first()

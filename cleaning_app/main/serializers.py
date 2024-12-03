@@ -106,24 +106,24 @@ class RoomSerializer(serializers.ModelSerializer):
         fields = ('__all__')
 
 
-# class TaskSerializer(serializers.ModelSerializer):
+class TaskSerializer(serializers.ModelSerializer):
 
-#     job = serializers.PrimaryKeyRelatedField(read_only=True)
+    job = serializers.PrimaryKeyRelatedField(read_only=True)
 
-#     class Meta:
-#         model = Task
-#         fields = '__all__'
+    class Meta:
+        model = Task
+        fields = '__all__'
 
 class JobSerializer(serializers.ModelSerializer):
 
     rooms = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), many=True)
-    # tasks = TaskSerializer(many=True)
+    tasks = TaskSerializer(many=True)
 
     class Meta:
         model = Job
         fields = [
              'customer', 'service_provider', 'home', 'status', 'date', 'start_time', 
-             'end_time', 'rooms', 'services'
+             'end_time', 'rooms', 'tasks'
          ]
     
 
@@ -150,11 +150,11 @@ class JobSerializer(serializers.ModelSerializer):
 #         fields = ('__all__')
 
 
-class ServiceSerializer(serializers.ModelSerializer):
+# class ServiceSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Service
-        fields = ('__all__')
+#     class Meta:
+#         model = Service
+#         fields = ('__all__')
 
 
 class ReviewSerializer(serializers.ModelSerializer):

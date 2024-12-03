@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.urls import path, include
 from .views import *
-#from .views import upload_image
 from rest_framework.routers import DefaultRouter
 
 app_name = 'main'
@@ -30,19 +29,19 @@ router.register('service_provider', Service_ProviderList)
 router.register('home', HomeList)
 router.register('room', RoomList)
 router.register('job', JobList)
-router.register('service', ServiceList)
 router.register('review', ReviewList)
-#router.register('image',Image)
-# router.register('task', TaskList)
+router.register('task', TaskList)
 
 
 urlpatterns = [
     path('', include(router.urls)),
-
-    #Add urls for add-user, 
-    
-    # path('api/verify_token/', VerifyToken.as_view(), name='verify-firebase-token'),
     path("create-user/", create_user_with_role, name='create-user'),
+    path("service-providers/<int:pk>/job-history", JobHistoryList.as_view(), name='service-provider-job-history'),
+    path("nearby-providers/<int:home_id>/", NearbyProvidersView.as_view(), name="nearby-providers"),
+    path("homes/<int:pk>/job-history", HomeHistoryList.as_view(), name='home-job-history'),
+    path('upload/', upload_image, name='upload_image'),
+
+    # path('api/verify_token/', VerifyToken.as_view(), name='verify-firebase-token'),
     # path("users/", UserList.as_view(), name='user-list'),
     # path("users/<int:pk>/", UserDetails.as_view(), name='user-details'),
     # path("customers/", CustomerList.as_view(), name='customer-list'),
@@ -50,12 +49,9 @@ urlpatterns = [
     # path("specialties/", SpecialtyList.as_view(), name='specialty-list'),
     # path("specialties/<int:pk>/", SpecialtyDetails.as_view(), name='specialty-details'),
     # path("service-providers/", Service_ProviderList.as_view(), name='service-provider-list'),
-    # path("service-providers/<int:pk>/", Service_ProviderDetails.as_view(), name='service-provider-details'),
-    # path("service-providers/<int:pk>/job-history", JobHistoryList.as_view(), name='service-provider-job-history'),
-    # path("nearby-providers/<int:home_id>/", NearbyProvidersView.as_view(), name="nearby-providers"),
+    # path("service-providers/<int:pk>/", Service_ProviderDetails.as_view(), name='service-provider-details'),   
 #     path("homes/", HomeList.as_view(), name="home-list"),
 #     path("homes/<int:pk>/", HomeDetails.as_view(), name="home-details"),
-#     path("homes/<int:pk>/job-history", HomeHistoryList.as_view(), name='home-job-history'),
 #     path("rooms/", RoomList.as_view(), name='room-list'),
 #     path("rooms/<int:pk>/", RoomDetails.as_view(), name='room-details'),
 #     path("jobs/", JobList.as_view(), name="job-list"),
@@ -74,6 +70,6 @@ urlpatterns = [
 #     # path("payment-methods/<int:pk>/", Payment_MethodDetails.as_view(), name="payment-method-details"),
 #     # path("bank-accounts/", Bank_AccountList.as_view(), name="bank-account-list"),
 #     # path("bank-accounts/<int:pk>/", Bank_AccountDetails.as_view(), name="bank-account-details"),
-     path('upload/', upload_image, name='upload_image'),
+    
  ]
 

@@ -240,13 +240,13 @@ class Service_ProviderList(viewsets.ModelViewSet):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-class Service_ProviderDetails(viewsets.ModelViewSet):
-    queryset = Service_Provider.objects.all()
-    serializer_class = Service_ProviderSerializer
-    permission_classes = []
+# class Service_ProviderDetails(viewsets.ModelViewSet):
+#     queryset = Service_Provider.objects.all()
+#     serializer_class = Service_ProviderSerializer
+#     permission_classes = []
 
 
-class JobHistoryList(viewsets.ModelViewSet):
+class JobHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
     permission_classes = []
 
@@ -263,12 +263,12 @@ class HomeList(viewsets.ModelViewSet):
     serializer_class = HomeSerializer
     permission_classes = []
 
-class HomeDetails(viewsets.ModelViewSet):
-    queryset = Home.objects.all()
-    serializer_class = HomeSerializer
-    permission_classes = []
+# class HomeDetails(viewsets.ModelViewSet):
+#     queryset = Home.objects.all()
+#     serializer_class = HomeSerializer
+#     permission_classes = []
 
-class HomeHistoryList(viewsets.ModelViewSet):
+class HomeHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
     permission_classes = []
 
@@ -284,10 +284,10 @@ class RoomList(viewsets.ModelViewSet):
     serializer_class = RoomSerializer
     permission_classes = []
 
-class RoomDetails(viewsets.ModelViewSet):
-    queryset = Room.objects.all()
-    serializer_class = RoomSerializer
-    permission_classes = []
+# class RoomDetails(viewsets.ModelViewSet):
+#     queryset = Room.objects.all()
+#     serializer_class = RoomSerializer
+#     permission_classes = []
 
 #---------------------------------------------------------------------------------------------------------
 # Job Views
@@ -297,10 +297,10 @@ class JobList(viewsets.ModelViewSet):
     serializer_class = JobSerializer
     permission_classes = []
 
-class JobDetails(viewsets.ModelViewSet):
-    queryset = Job.objects.all()
-    serializer_class = JobSerializer
-    permission_classes = []
+# class JobDetails(viewsets.ModelViewSet):
+#     queryset = Job.objects.all()
+#     serializer_class = JobSerializer
+#     permission_classes = []
 
 #---------------------------------------------------------------------------------------------------------
 # Availability Views
@@ -331,22 +331,22 @@ class JobDetails(viewsets.ModelViewSet):
 #---------------------------------------------------------------------------------------------------------
 # Service Views
 
-class ServiceList(viewsets.ModelViewSet):
-    queryset = Service.objects.all()
-    serializer_class = ServiceSerializer
-    # permission_classes = [IsAuthenticated]
+# class ServiceList(viewsets.ModelViewSet):
+#     queryset = Service.objects.all()
+#     serializer_class = ServiceSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class ServiceDetails(viewsets.ModelViewSet):
-    queryset = Service.objects.all()
-    serializer_class = ServiceSerializer
-    # permission_classes = [IsAuthenticated]
+# class ServiceDetails(viewsets.ModelViewSet):
+#     queryset = Service.objects.all()
+#     serializer_class = ServiceSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Task Views
-# class TaskList(generics.ListCreateAPIView):
-#     queryset = Task.objects.all()
-#     serializer_class = TaskSerializer
-#     # permission_classes = [IsAuthenticated]
+class TaskList(viewsets.ModelViewSet):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    # permission_classes = [IsAuthenticated]
 
 # class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
 #     queryset = Task.objects.all()
@@ -361,10 +361,10 @@ class ReviewList(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     # permission_classes = [IsAuthenticated]
 
-class ReviewDetails(viewsets.ModelViewSet):
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
-    # permission_classes = [IsAuthenticated]
+# class ReviewDetails(viewsets.ModelViewSet):
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Method Views
@@ -393,17 +393,17 @@ class ReviewDetails(viewsets.ModelViewSet):
 
 #---------------------------------------------------------------------------------------------------------
 
-# class NearbyProvidersView(APIView):
-#     # permission_classes = [IsAuthenticated]
-#     def get(self, request, home_id):
-#         # Retrieve the specific Home instance based on home_id
-#         customer_home = Home.objects.get(id=home_id)
-#         # Pass the Home instance to get eligible providers
-#         eligible_providers = get_eligible_providers(customer_home)
-#         api_key = settings.LOCATIONIQ_API_KEY
-#         # Pass only the customer_home ID and eligible providers to get_nearby_providers
-#         nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
-#         return Response(nearby_providers)
+class NearbyProvidersView(APIView):
+    # permission_classes = [IsAuthenticated]
+    def get(self, request, home_id):
+        # Retrieve the specific Home instance based on home_id
+        customer_home = Home.objects.get(id=home_id)
+        # Pass the Home instance to get eligible providers
+        eligible_providers = get_eligible_providers(customer_home)
+        api_key = settings.LOCATIONIQ_API_KEY
+        # Pass only the customer_home ID and eligible providers to get_nearby_providers
+        nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
+        return Response(nearby_providers)
     
 #---------------------------------------------------------------------------------------------------------
 

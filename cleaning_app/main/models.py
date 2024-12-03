@@ -9,6 +9,9 @@ from django.contrib.auth.models import User
 #---------------------------------------------------------------------------------------------------------
  
 class User(AbstractUser):
+    def default_allergies():
+        return ['none']
+
     # choices for role field. first part of tuple is what is stored in database, second is what the user or admin sees.
     ROLE_CHOICES = [
         ('customer', 'Customer'),
@@ -22,15 +25,15 @@ class User(AbstractUser):
         ('fragrance', 'Fragrance'), ('SLS', 'SLS'), ('ammonia', 'Ammonia'), 
         ('bleach', 'Bleach'), ('other', 'Other')
     ]
-    first_name = models.CharField(max_length=25, blank=False, null=False, unique=False)
-    last_name = models.CharField(max_length=25, blank=False, null=False, unique=False)
+    first_name = models.CharField(max_length=25, blank=False, null=False)
+    last_name = models.CharField(max_length=25, blank=False, null=False)
     
     password = models.CharField(max_length=128, blank=True, null=True)
     phone = models.CharField(max_length=25, blank=False, null=False, unique=True)
     email = models.EmailField(blank=False, null=False, unique=True)
 
     date_of_birth = models.DateField(null=False, blank=False)
-    allergies = models.JSONField(blank=True, null=True, choices=ALLERGY_CHOICES,  default='none')
+    allergies = models.JSONField(blank=True, null=True, default=default_allergies)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
 
     def allergy_validation(self):
@@ -206,16 +209,16 @@ class Room(models.Model):
 
 #------------------------------------------------------------------------------------------------------------
 
-class Service(models.Model):
-    # Service fields
-    name = models.CharField(max_length=50)
-    description = models.TextField()
-    # price_range = models.DecimalField(max_digits=6, decimal_places=2)
-    # estimated_duration = models.DurationField()
+# class Service(models.Model):
+#     # Service fields
+#     name = models.CharField(max_length=50)
+#     description = models.TextField()
+#     # price_range = models.DecimalField(max_digits=6, decimal_places=2)
+#     # estimated_duration = models.DurationField()
 
-    def __str__(self):
-        return f"{self.name})"
-    # ${self.price_range} ({self.estimated_duration}
+#     def __str__(self):
+#         return f"{self.name})"
+#     # ${self.price_range} ({self.estimated_duration}
 
 #------------------------------------------------------------------------------------------------------------
 
@@ -235,8 +238,8 @@ class Job(models.Model):
     home = models.ForeignKey(Home, related_name='jobs', on_delete=models.CASCADE)
 
     rooms  = models.ManyToManyField(Room, related_name="jobs")
-    services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
-    #tasks = models.ManyToManyField('Task', related_name='job_tasks') # Many-to-many with Task
+    # services = models.ManyToManyField(Service, related_name='jobs')  # Many-to-many with Service
+    tasks = models.ManyToManyField('Task', related_name='job_tasks') # Many-to-many with Task
 
     # Status and schedule fields
     status = models.CharField(max_length=20, choices=STATUS_TYPE_CHOICES, blank=False, null=False, default='pending')
@@ -255,23 +258,23 @@ class Job(models.Model):
     
 #---------------------------------------------------------------------------------------------------------
 
-# class Task(models.Model):
-#     # Foreign key to a Job model 
-#     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='task_jobs')
-#     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tasks', default='General')
+class Task(models.Model):
+    # Foreign key to a Job model 
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='task_jobs')
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tasks', default='General')
 
-#     # Basic fields
-#     name = models.CharField(max_length=50)
-#     description = models.TextField()
-#     status = models.CharField(max_length=15)
+    # Basic fields
+    name = models.CharField(max_length=50)
+    description = models.TextField()
+    status = models.CharField(max_length=15)
     
-#     # Optional fields
-#     duration = models.DurationField(null=True, blank=True)  # Duration field for time intervals
-#     price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    # Optional fields
+    duration = models.DurationField(null=True, blank=True)  # Duration field for time intervals
+    price = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     
-#     # Notes fields
-#     service_provider_notes = models.TextField(blank=True, null=True)
-#     customer_notes = models.TextField(blank=True, null=True)
+    # Notes fields
+    service_provider_notes = models.TextField(blank=True, null=True)
+    customer_notes = models.TextField(blank=True, null=True)
 
 
 

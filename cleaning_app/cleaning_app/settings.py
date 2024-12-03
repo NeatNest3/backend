@@ -14,6 +14,7 @@ from pathlib import Path
 #from dotenv import load_dotenv
 import os
 import logging
+import dj_database_url
 
 LOGGING = {
     'version': 1,
@@ -29,6 +30,10 @@ LOGGING = {
     },
 }
 
+DATABASES = {}
+DATABASES["default"] = dj_database_url.parse("postgresql://cleaning_app_user:58vLesjsuDZQIhTzZWfVfQjPUqQ9PIza@dpg-ct2g58lsvqrc73ai5grg-a.virginia-postgres.render.com/cleaning_app")
+
+
 #load_dotenv()
 LOCATIONIQ_API_KEY = os.getenv("LOCATIONIQ_API_KEY")
 
@@ -43,9 +48,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g4#_*pbb@omzq$rc3r=@7b#vaa2l+ahrqnas*p^o28%u$g%!2%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = [ ]
+ALLOWED_HOSTS = [ '192.168.1.15', 'localhost', '127.0.0.1' ]
 
 AUTH_USER_MODEL = 'main.User'
 
@@ -68,18 +73,25 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'cleaning_app.main.apps.MainConfig',
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
 ]
 
 MIDDLEWARE = [
+    # 'cleaning_app.middleware.DebugMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.RemoteUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 
@@ -109,6 +121,24 @@ WSGI_APPLICATION = 'cleaning_app.cleaning_app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.RemoteUserBackend',
+]
+
+# apiexample/settings.py
+
+JWT_AUTH = {
+    'JWT_PAYLOAD_GET_USERNAME_HANDLER':
+        'cleaning_app.main.utils.jwt_get_username_from_payload_handler',
+    'JWT_DECODE_HANDLER':
+        'cleaning_app.main.utils.jwt_decode_token',
+    'JWT_ALGORITHM': 'RS256',
+    'JWT_AUDIENCE': '{https://neatnest.tech}',
+    'JWT_ISSUER': 'https://dev-jbo3q8bi8aocdmxp.us.auth0.com/',
+    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -144,7 +174,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+#Needed for Deployment (Render)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -172,12 +205,23 @@ MEDIA_URL = "https:// neatnest.s3.amazonaws.com/media/"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'cleaning_app.main.utils.FirebaseAuthentication',
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',
+    #     'rest_framework.permissions.AllowAny',
+    # ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 
+# Default Auth in rest framework (simplejwt) is to integrate AuthO for Authentication on the backend
 
 LAMBDA_API_URL = "https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
+
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}

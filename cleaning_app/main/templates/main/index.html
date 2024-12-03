@@ -15,7 +15,7 @@
 
         path('api/verify_firebase_token/', VerifyFirebaseToken.as_view(), name='verify-firebase-token'),
 
-        path("users/create-user/", CreateUserFromFirebase.as_view, name='create-user'),
+        path("create-user/", CreateUserFromFirebase.as_view, name='create-user'),
 
         path("users/", UserList.as_view(), name='user-list'),
 

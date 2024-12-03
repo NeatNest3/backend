@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from .models import User, DeviceToken  # Import any models you need
+from .models import User # DeviceToken  # Import any models you need
 from firebase_admin import firestore, messaging  # Firebase imports
 from cleaning_app.cleaning_app.local_settings import db
 

@@ -1,9 +1,11 @@
 import boto3
+import logging
 from .models import *
 from .serializers import *
-from django.http import HttpResponse
-from rest_framework import generics, status
+from rest_framework import viewsets
+from rest_framework import generics
 from rest_framework.views import APIView
+from rest_framework import status
 from rest_framework.response import Response
 from django.conf import settings
 from django.shortcuts import render
@@ -13,125 +15,186 @@ from .models import Image
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
-# from .firebase import db
-from firebase_admin import auth as firebase_auth, firestore
-from .models import DeviceToken
+# from .models import DeviceToken
 from cleaning_app.cleaning_app.local_settings import messaging
 from .firebase_messaging import *
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from .utils import get_eligible_providers, get_nearby_providers
 from botocore.exceptions import NoCredentialsError
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import api_view, permission_classes
+from functools import wraps
+from django.db import transaction
+import jwt
+
+
+
+logger = logging.getLogger(__name__)
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
 
 #---------------------------------------------------------------------------------------------------------
-# Auth View
 
-class VerifyFirebaseToken(APIView):
-    permission_classes = [IsAuthenticated]  # You can set this to allow public access if not using session authentication
+# # auth0authorization
 
-    def post(self, request):
-        print("Received request:", request)
-        print("Request headers:", request.headers)
-        # Retrieve the Firebase ID token from the Authorization header
-        token = request.headers.get('Authorization')
-        print("Authorization header:", token)
-        
-        if token is None or not token.startswith('Bearer '):
-            print("Authorization token is missing or invalid.")
-            return Response({'error': 'Authorization token is missing or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        id_token = token.split(' ')[1]  # Get the actual token without "Bearer"
-        print("Firebase ID token:", id_token)
-        
-        try:
-            # Verify the Firebase ID token
-            decoded_token = firebase_auth.verify_id_token(id_token)
-            print("Decoded Firebase token:", decoded_token)
-            firebase_uid = decoded_token['uid']
-            print("Firebase UID:", firebase_uid)
-            
-            # Get the user associated with the Firebase UID (you can store it as `firebase_uid` field in your User model)
-            user = get_user_model().objects.filter(firebase_uid=firebase_uid).first()
-            if user:
-                # Optionally, you could set the session or return the user data
-                return Response({
-                    'message': 'User authenticated successfully',
-                    'user': {'id': user.id, 'username': user.username},
-                })
-            else:
-                return Response({'error': 'User does not exist in Django.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        except firebase_auth.AuthError as e:
-            return Response({'error': f'Invalid Firebase token: {str(e)}'}, status=status.HTTP_401_UNAUTHORIZED)
+
+# def get_token_auth_header(request):
+#     """Obtains the Access Token from the Authorization Header
+#     """
+#     auth = request.META.get("HTTP_AUTHORIZATION", None)
+#     if not auth:
+#         raise ValueError('Authorization header is missing')
+    
+#     parts = auth.split()
+#     if parts[0].lower() != 'bearer':
+#         raise ValueError('Authorization header must start with Bearer')
+    
+#     token = parts[1]
+
+#     return token
+
+# def requires_scope(required_scope):
+#     """Determines if the required scope is present in the Access Token
+#     Args:
+#         required_scope (str): The scope required to access the resource
+#     """
+#     def require_scope(f):
+#         @wraps(f)
+#         def decorated(self, request, *args, **kwargs):
+#             try:
+#                 token = get_token_auth_header(request)
+#                 decoded = jwt.decode(token, verify=False)
+#                 if decoded.get("scope"):
+#                     token_scopes = decoded["scope"].split()
+#                     for token_scope in token_scopes:
+#                         if token_scope == required_scope:
+#                             return f(self, request, *args, **kwargs)
+#             except Exception as e:
+#                     response = JsonResponse({'message': f'Error: {str(e)}'})
+#                     response.status_code = 403
+#                     return response                  
+#         return decorated
+#     return require_scope
+
+
+# @api_view(['GET'])
+# @permission_classes([AllowAny])
+# def public(request):
+#     """A public endpoint accessible without authentication."""
+#     return JsonResponse({'message': 'Hello from a public endpoint! You don\'t need to be authenticated to see this.'})
+
+# @api_view(['GET'])
+# def private(request):
+#     """A private endpoint accessible only with authentication."""
+#     return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
+
+# @api_view(['GET'])
+# @requires_scope('read:messages')
+# def private_scoped(request):
+#     """A private endpoint accessible only with a specific scope."""
+#     return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
 
 
 #---------------------------------------------------------------------------------------------------------
-# User Views
+#User Views
+
+@api_view(['POST'])
+
+def create_user_with_role(request):
+    """
+    Create a user with a role. Depending on the role, create a corresponding
+    Customer or Service Provider instance.
+    """
+    user_data = request.data.get("user")  # Separate user data from customer-specific data
+    customer_data = request.data.get("customer")  # Separate customer data
+    
+    if not user_data:
+        return Response({"error": "User data is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    role = user_data.get("role")
+    if not role:
+        return Response({"error": "Role is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():  # Ensure atomicity of user and customer creation
+        # Step 1: Create the User
+        user_serializer = UserSerializer(data=user_data)
+        if user_serializer.is_valid():
+            user = user_serializer.save()  # Save the user
+        else:
+            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Step 2: Create the Customer or Service Provider
+        if role == "customer":
+            if not customer_data:
+                return Response({"error": "Customer data is required for role 'customer'."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            customer_data["user"] = user.id  # Reference the created user's ID
+            customer_serializer = CustomerSerializer(data=customer_data)
+            if customer_serializer.is_valid():
+                customer_serializer.save()
+            else:
+                return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif role == "cleaner":  # Assuming "cleaner" corresponds to Service Provider
+            service_provider_data = request.data.get("service_provider")
+            if not service_provider_data:
+                return Response({"error": "Service Provider data is required for role 'cleaner'."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            service_provider_data["user"] = user.id  # Reference the created user's ID
+            service_provider_serializer = Service_ProviderSerializer(data=service_provider_data)
+            if service_provider_serializer.is_valid():
+                service_provider_serializer.save()
+            else:
+                return Response(service_provider_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        else:
+            return Response({"error": "Invalid role specified."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(user_serializer.data, status=status.HTTP_201_CREATED)
 
 
-class CreateUserFromFirebase(APIView):
-    permission_classes = [IsAuthenticated]  # Ensure the request is authenticated via Firebase
-
-    def post(self, request):
-        # Get Firebase ID token from the Authorization header
-        id_token = request.headers.get('Authorization').split(' ')[1]  # Expecting "Bearer <id_token>"
-
-        try:
-            # Verify the Firebase ID token
-            decoded_token = firebase_auth.verify_id_token(id_token)
-            firebase_uid = decoded_token['uid']  # Firebase UID of the user
-
-            # Check if the user already exists in Django by Firebase UID
-            if User.objects.filter(username=firebase_uid).exists():
-                return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Create the new user in Django with data from Firebase
-            user_data = request.data
-            user = User.objects.create_user(
-                username=user_data['username'],  # Use Firebase UID as the username
-                first_name=user_data['first_name'],
-                last_name=user_data['last_name'],
-                preffered_name=user_data['preffered_name'],
-                phone=user_data['phone'],
-                email=user_data['email'],
-                password=user_data['password'],  
-                allergies=user_data['allergies'],
-                date_of_birth=user_data['date_of_birth'],
-                role=user_data['role'],
-                firebase_uid=user_data['firebase_uid']
-            )
-
-            user_serializer = UserSerializer(user)
-
-            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({"error": f"Failed to authenticate with Firebase: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserList(generics.ListCreateAPIView):
+class UserList(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class UserDetails(generics.RetrieveUpdateDestroyAPIView):
+    # @requires_scope('read:users')  # Enforce scope for accessing user data
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     if not user.is_superuser:
+    #         return User.objects.filter(id=user.id)
+    #     # Optionally, return all users or filter based on roles
+    #     return User.objects.all()
+
+
+class UserDetails(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
+
+    def get_object(self):
+        user = self.request.user
+        # Restrict users to their own details unless they're admins
+        if not user.is_superuser:  # Adjust based on your role setup
+            return User.objects.get(pk=user.pk)
+        return super().get_object()  # Admins can access any user
+
+    # @requires_scope('read:user_details')  # Optional: Enforce scope for access
+    # def retrieve(self, request, *args, **kwargs):
+    #     return super().retrieve(request, *args, **kwargs)
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
 
-class CustomerList(generics.ListCreateAPIView):
+class CustomerList(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         # Here, 'user' should be included in the validated data sent from the frontend.
@@ -142,31 +205,31 @@ class CustomerList(generics.ListCreateAPIView):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-class CustomerDetails(generics.RetrieveUpdateDestroyAPIView):
+class CustomerDetails(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
 
-class SpecialtyList(generics.ListCreateAPIView):
+class SpecialtyList(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
-class SpecialtyDetails(generics.RetrieveUpdateDestroyAPIView):
+class SpecialtyDetails(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views
 
-class Service_ProviderList(generics.ListCreateAPIView):
+class Service_ProviderList(viewsets.ModelViewSet):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def perform_create(self, serializer):
         # Here, 'user' should be included in the validated data sent from the frontend.
@@ -177,15 +240,15 @@ class Service_ProviderList(generics.ListCreateAPIView):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-class Service_ProviderDetails(generics.RetrieveUpdateDestroyAPIView):
+class Service_ProviderDetails(viewsets.ModelViewSet):
     queryset = Service_Provider.objects.all()
     serializer_class = Service_ProviderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
 
-class JobHistoryList(generics.ListAPIView):
+class JobHistoryList(viewsets.ModelViewSet):
     serializer_class = JobSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         service_provider_id = self.kwargs['pk']
@@ -195,19 +258,19 @@ class JobHistoryList(generics.ListAPIView):
 #---------------------------------------------------------------------------------------------------------
 # Home Views
 
-class HomeList(generics.ListCreateAPIView):
+class HomeList(viewsets.ModelViewSet):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class HomeDetails(generics.RetrieveUpdateDestroyAPIView):
+class HomeDetails(viewsets.ModelViewSet):
     queryset = Home.objects.all()
     serializer_class = HomeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class HomeHistoryList(generics.ListAPIView):
+class HomeHistoryList(viewsets.ModelViewSet):
     serializer_class = JobSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         home_id = self.kwargs['pk']
@@ -216,131 +279,131 @@ class HomeHistoryList(generics.ListAPIView):
 #---------------------------------------------------------------------------------------------------------
 # Room Views
 
-class RoomList(generics.ListCreateAPIView):
+class RoomList(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class RoomDetails(generics.RetrieveUpdateDestroyAPIView):
+class RoomDetails(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
 #---------------------------------------------------------------------------------------------------------
 # Job Views
 
-class JobList(generics.ListCreateAPIView):
+class JobList(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
-class JobDetails(generics.RetrieveUpdateDestroyAPIView):
+class JobDetails(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
 #---------------------------------------------------------------------------------------------------------
 # Availability Views
 
-class AvailabilityList(generics.ListCreateAPIView):
-    queryset = Availability.objects.all()
-    serializer_class = AvailabilitySerializer
-    permission_classes = [IsAuthenticated]
+# class AvailabilityList(generics.ListCreateAPIView):
+#     queryset = Availability.objects.all()
+#     serializer_class = AvailabilitySerializer
+#     # permission_classes = [IsAuthenticated]
 
-class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Availability.objects.all()
-    serializer_class = AvailabilitySerializer
-    permission_classes = [IsAuthenticated]
+# class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Availability.objects.all()
+#     serializer_class = AvailabilitySerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Views
 
-class PaymentList(generics.ListCreateAPIView):
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
+# class PaymentList(generics.ListCreateAPIView):
+#     queryset = Payment.objects.all()
+#     serializer_class = PaymentSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
+# class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Payment.objects.all()
+#     serializer_class = PaymentSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Service Views
 
-class ServiceList(generics.ListCreateAPIView):
+class ServiceList(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
-class ServiceDetails(generics.RetrieveUpdateDestroyAPIView):
+class ServiceDetails(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Task Views
-class TaskList(generics.ListCreateAPIView):
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
+# class TaskList(generics.ListCreateAPIView):
+#     queryset = Task.objects.all()
+#     serializer_class = TaskSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
+# class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Task.objects.all()
+#     serializer_class = TaskSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Review Views
 
-class ReviewList(generics.ListCreateAPIView):
+class ReviewList(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
-class ReviewDetails(generics.RetrieveUpdateDestroyAPIView):
+class ReviewDetails(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Payment Method Views
-class Payment_MethodList(generics.ListCreateAPIView):
-    queryset = Payment_Method.objects.all()
-    serializer_class = Payment_MethodSerializer
-    permission_classes = [IsAuthenticated]
+# class Payment_MethodList(generics.ListCreateAPIView):
+#     queryset = Payment_Method.objects.all()
+#     serializer_class = Payment_MethodSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Payment_Method.objects.all()
-    serializer_class = Payment_MethodSerializer
-    permission_classes = [IsAuthenticated]
+# class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Payment_Method.objects.all()
+#     serializer_class = Payment_MethodSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Bank Account Views
 
-class Bank_AccountList(generics.ListCreateAPIView):
-    queryset = Bank_Account.objects.all()
-    serializer_class = Bank_AccountSerializer
-    permission_classes = [IsAuthenticated]
+# class Bank_AccountList(generics.ListCreateAPIView):
+#     queryset = Bank_Account.objects.all()
+#     serializer_class = Bank_AccountSerializer
+#     # permission_classes = [IsAuthenticated]
 
-class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Bank_Account.objects.all()
-    serializer_class = Bank_AccountSerializer
-    permission_classes = [IsAuthenticated]
+# class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Bank_Account.objects.all()
+#     serializer_class = Bank_AccountSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 
-class NearbyProvidersView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request, home_id):
-        # Retrieve the specific Home instance based on home_id
-        customer_home = Home.objects.get(id=home_id)
-        # Pass the Home instance to get eligible providers
-        eligible_providers = get_eligible_providers(customer_home)
-        api_key = settings.LOCATIONIQ_API_KEY
-        # Pass only the customer_home ID and eligible providers to get_nearby_providers
-        nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
-        return Response(nearby_providers)
+# class NearbyProvidersView(APIView):
+#     # permission_classes = [IsAuthenticated]
+#     def get(self, request, home_id):
+#         # Retrieve the specific Home instance based on home_id
+#         customer_home = Home.objects.get(id=home_id)
+#         # Pass the Home instance to get eligible providers
+#         eligible_providers = get_eligible_providers(customer_home)
+#         api_key = settings.LOCATIONIQ_API_KEY
+#         # Pass only the customer_home ID and eligible providers to get_nearby_providers
+#         nearby_providers = get_nearby_providers(customer_home.customer_id, customer_home.id, eligible_providers, api_key)
+#         return Response(nearby_providers)
     
 #---------------------------------------------------------------------------------------------------------
 
@@ -407,3 +470,22 @@ def upload_image(request):
 
     return render(request, 'upload_image.html')
     
+    if request.method == 'POST':
+        file = request.FILES.get('file')
+        if not file:
+            return JsonResponse({'error': 'No file provided'}, status=400)
+
+        # Set up data for the Lambda function
+        url = 'https://yddlnybva9.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction'
+        files = {'file': file.read()}
+        headers = {'Content-Type': 'application/octet-stream'}
+
+        # Make the request
+        response = requests.post(url, files=files, headers=headers)
+        
+#         return HttpResponse("Image Successfully Uploaded!")
+
+        return JsonResponse({'message': 'File uploaded successfully'}, status=200)
+
+
+

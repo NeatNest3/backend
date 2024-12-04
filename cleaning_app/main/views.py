@@ -101,61 +101,61 @@ def homepage(request):
 #---------------------------------------------------------------------------------------------------------
 #User Views
 
-@api_view(['POST'])
+# @api_view(['POST'])
 
-def create_user_with_role(request):
-    """
-    Create a user with a role. Depending on the role, create a corresponding
-    Customer or Service Provider instance.
-    """
-    user_data = request.data.get("user")  # Separate user data from customer-specific data
-    customer_data = request.data.get("customer")  # Separate customer data
+# def create_user_with_role(request):
+#     """
+#     Create a user with a role. Depending on the role, create a corresponding
+#     Customer or Service Provider instance.
+#     """
+#     user_data = request.data.get("user")  # Separate user data from customer-specific data
+#     customer_data = request.data.get("customer")  # Separate customer data
     
-    if not user_data:
-        return Response({"error": "User data is required."}, status=status.HTTP_400_BAD_REQUEST)
+#     if not user_data:
+#         return Response({"error": "User data is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    role = user_data.get("role")
-    if not role:
-        return Response({"error": "Role is required."}, status=status.HTTP_400_BAD_REQUEST)
+#     role = user_data.get("role")
+#     if not role:
+#         return Response({"error": "Role is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    with transaction.atomic():  # Ensure atomicity of user and customer creation
-        # Step 1: Create the User
-        user_serializer = UserSerializer(data=user_data)
-        if user_serializer.is_valid():
-            user = user_serializer.save()  # Save the user
-        else:
-            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     with transaction.atomic():  # Ensure atomicity of user and customer creation
+#         # Step 1: Create the User
+#         user_serializer = UserSerializer(data=user_data)
+#         if user_serializer.is_valid():
+#             user = user_serializer.save()  # Save the user
+#         else:
+#             return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Step 2: Create the Customer or Service Provider
-        if role == "customer":
-            if not customer_data:
-                return Response({"error": "Customer data is required for role 'customer'."},
-                                status=status.HTTP_400_BAD_REQUEST)
+#         # Step 2: Create the Customer or Service Provider
+#         if role == "customer":
+#             if not customer_data:
+#                 return Response({"error": "Customer data is required for role 'customer'."},
+#                                 status=status.HTTP_400_BAD_REQUEST)
 
-            customer_data["user"] = user.id  # Reference the created user's ID
-            customer_serializer = CustomerSerializer(data=customer_data)
-            if customer_serializer.is_valid():
-                customer_serializer.save()
-            else:
-                return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#             customer_data["user"] = user.id  # Reference the created user's ID
+#             customer_serializer = CustomerSerializer(data=customer_data)
+#             if customer_serializer.is_valid():
+#                 customer_serializer.save()
+#             else:
+#                 return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        elif role == "cleaner":  # Assuming "cleaner" corresponds to Service Provider
-            service_provider_data = request.data.get("service_provider")
-            if not service_provider_data:
-                return Response({"error": "Service Provider data is required for role 'cleaner'."},
-                                status=status.HTTP_400_BAD_REQUEST)
+#         elif role == "cleaner":  # Assuming "cleaner" corresponds to Service Provider
+#             service_provider_data = request.data.get("service_provider")
+#             if not service_provider_data:
+#                 return Response({"error": "Service Provider data is required for role 'cleaner'."},
+#                                 status=status.HTTP_400_BAD_REQUEST)
 
-            service_provider_data["user"] = user.id  # Reference the created user's ID
-            service_provider_serializer = Service_ProviderSerializer(data=service_provider_data)
-            if service_provider_serializer.is_valid():
-                service_provider_serializer.save()
-            else:
-                return Response(service_provider_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#             service_provider_data["user"] = user.id  # Reference the created user's ID
+#             service_provider_serializer = Service_ProviderSerializer(data=service_provider_data)
+#             if service_provider_serializer.is_valid():
+#                 service_provider_serializer.save()
+#             else:
+#                 return Response(service_provider_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        else:
-            return Response({"error": "Invalid role specified."}, status=status.HTTP_400_BAD_REQUEST)
+#         else:
+#             return Response({"error": "Invalid role specified."}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(user_serializer.data, status=status.HTTP_201_CREATED)
 
 
 class UserList(viewsets.ModelViewSet):
@@ -172,17 +172,17 @@ class UserList(viewsets.ModelViewSet):
     #     return User.objects.all()
 
 
-class UserDetails(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = []
+# class UserDetails(viewsets.ModelViewSet):
+#     queryset = User.objects.all()
+#     serializer_class = UserSerializer
+#     permission_classes = []
 
-    def get_object(self):
-        user = self.request.user
-        # Restrict users to their own details unless they're admins
-        if not user.is_superuser:  # Adjust based on your role setup
-            return User.objects.get(pk=user.pk)
-        return super().get_object()  # Admins can access any user
+#     def get_object(self):
+#         user = self.request.user
+#         # Restrict users to their own details unless they're admins
+#         if not user.is_superuser:  # Adjust based on your role setup
+#             return User.objects.get(pk=user.pk)
+#         return super().get_object()  # Admins can access any user
 
     # @requires_scope('read:user_details')  # Optional: Enforce scope for access
     # def retrieve(self, request, *args, **kwargs):
@@ -205,10 +205,10 @@ class CustomerList(viewsets.ModelViewSet):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-class CustomerDetails(viewsets.ModelViewSet):
-    queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer
-    # permission_classes = [IsAuthenticated]
+# class CustomerDetails(viewsets.ModelViewSet):
+#     queryset = Customer.objects.all()
+#     serializer_class = CustomerSerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
@@ -218,10 +218,10 @@ class SpecialtyList(viewsets.ModelViewSet):
     serializer_class = SpecialtySerializer
     # permission_classes = [IsAuthenticated]
 
-class SpecialtyDetails(viewsets.ModelViewSet):
-    queryset = Specialty.objects.all()
-    serializer_class = SpecialtySerializer
-    # permission_classes = [IsAuthenticated]
+# class SpecialtyDetails(viewsets.ModelViewSet):
+#     queryset = Specialty.objects.all()
+#     serializer_class = SpecialtySerializer
+#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views

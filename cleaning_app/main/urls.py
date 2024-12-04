@@ -35,12 +35,13 @@ router.register('task', TaskList)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path("create-user/", create_user_with_role, name='create-user'),
+    
     path("service-providers/<int:pk>/job-history", JobHistoryList.as_view(), name='service-provider-job-history'),
     path("nearby-providers/<int:home_id>/", NearbyProvidersView.as_view(), name="nearby-providers"),
     path("homes/<int:pk>/job-history", HomeHistoryList.as_view(), name='home-job-history'),
     path('upload/', upload_image, name='upload_image'),
 
+    # path("create-user/", create_user_with_role, name='create-user'),
     # path('api/verify_token/', VerifyToken.as_view(), name='verify-firebase-token'),
     # path("users/", UserList.as_view(), name='user-list'),
     # path("users/<int:pk>/", UserDetails.as_view(), name='user-details'),

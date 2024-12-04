@@ -12,22 +12,11 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Image
-from django.urls import reverse
 from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
-# from .models import DeviceToken
-from cleaning_app.cleaning_app.local_settings import messaging
-from .firebase_messaging import *
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.contrib.auth import get_user_model
 from .utils import get_eligible_providers, get_nearby_providers
-from botocore.exceptions import NoCredentialsError
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import api_view, permission_classes
-from functools import wraps
-from django.db import transaction
-import jwt
+from rest_framework.decorators import api_view
 
 
 
@@ -35,158 +24,14 @@ logger = logging.getLogger(__name__)
 
 def homepage(request):
     return render(request, 'main/index.html')  # Use 'appname/filename.html'
-
 #---------------------------------------------------------------------------------------------------------
-
-# # auth0authorization
-
-
-# def get_token_auth_header(request):
-#     """Obtains the Access Token from the Authorization Header
-#     """
-#     auth = request.META.get("HTTP_AUTHORIZATION", None)
-#     if not auth:
-#         raise ValueError('Authorization header is missing')
-    
-#     parts = auth.split()
-#     if parts[0].lower() != 'bearer':
-#         raise ValueError('Authorization header must start with Bearer')
-    
-#     token = parts[1]
-
-#     return token
-
-# def requires_scope(required_scope):
-#     """Determines if the required scope is present in the Access Token
-#     Args:
-#         required_scope (str): The scope required to access the resource
-#     """
-#     def require_scope(f):
-#         @wraps(f)
-#         def decorated(self, request, *args, **kwargs):
-#             try:
-#                 token = get_token_auth_header(request)
-#                 decoded = jwt.decode(token, verify=False)
-#                 if decoded.get("scope"):
-#                     token_scopes = decoded["scope"].split()
-#                     for token_scope in token_scopes:
-#                         if token_scope == required_scope:
-#                             return f(self, request, *args, **kwargs)
-#             except Exception as e:
-#                     response = JsonResponse({'message': f'Error: {str(e)}'})
-#                     response.status_code = 403
-#                     return response                  
-#         return decorated
-#     return require_scope
-
-
-# @api_view(['GET'])
-# @permission_classes([AllowAny])
-# def public(request):
-#     """A public endpoint accessible without authentication."""
-#     return JsonResponse({'message': 'Hello from a public endpoint! You don\'t need to be authenticated to see this.'})
-
-# @api_view(['GET'])
-# def private(request):
-#     """A private endpoint accessible only with authentication."""
-#     return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
-
-# @api_view(['GET'])
-# @requires_scope('read:messages')
-# def private_scoped(request):
-#     """A private endpoint accessible only with a specific scope."""
-#     return JsonResponse({'message': 'Hello from a private endpoint! You need to be authenticated to see this.'})
-
-
-#---------------------------------------------------------------------------------------------------------
-#User Views
-
-# @api_view(['POST'])
-
-# def create_user_with_role(request):
-#     """
-#     Create a user with a role. Depending on the role, create a corresponding
-#     Customer or Service Provider instance.
-#     """
-#     user_data = request.data.get("user")  # Separate user data from customer-specific data
-#     customer_data = request.data.get("customer")  # Separate customer data
-    
-#     if not user_data:
-#         return Response({"error": "User data is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-#     role = user_data.get("role")
-#     if not role:
-#         return Response({"error": "Role is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-#     with transaction.atomic():  # Ensure atomicity of user and customer creation
-#         # Step 1: Create the User
-#         user_serializer = UserSerializer(data=user_data)
-#         if user_serializer.is_valid():
-#             user = user_serializer.save()  # Save the user
-#         else:
-#             return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Step 2: Create the Customer or Service Provider
-#         if role == "customer":
-#             if not customer_data:
-#                 return Response({"error": "Customer data is required for role 'customer'."},
-#                                 status=status.HTTP_400_BAD_REQUEST)
-
-#             customer_data["user"] = user.id  # Reference the created user's ID
-#             customer_serializer = CustomerSerializer(data=customer_data)
-#             if customer_serializer.is_valid():
-#                 customer_serializer.save()
-#             else:
-#                 return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         elif role == "cleaner":  # Assuming "cleaner" corresponds to Service Provider
-#             service_provider_data = request.data.get("service_provider")
-#             if not service_provider_data:
-#                 return Response({"error": "Service Provider data is required for role 'cleaner'."},
-#                                 status=status.HTTP_400_BAD_REQUEST)
-
-#             service_provider_data["user"] = user.id  # Reference the created user's ID
-#             service_provider_serializer = Service_ProviderSerializer(data=service_provider_data)
-#             if service_provider_serializer.is_valid():
-#                 service_provider_serializer.save()
-#             else:
-#                 return Response(service_provider_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         else:
-#             return Response({"error": "Invalid role specified."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+# User Views
 
 
 class UserList(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = []
-
-    # @requires_scope('read:users')  # Enforce scope for accessing user data
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     if not user.is_superuser:
-    #         return User.objects.filter(id=user.id)
-    #     # Optionally, return all users or filter based on roles
-    #     return User.objects.all()
-
-
-# class UserDetails(viewsets.ModelViewSet):
-#     queryset = User.objects.all()
-#     serializer_class = UserSerializer
-#     permission_classes = []
-
-#     def get_object(self):
-#         user = self.request.user
-#         # Restrict users to their own details unless they're admins
-#         if not user.is_superuser:  # Adjust based on your role setup
-#             return User.objects.get(pk=user.pk)
-#         return super().get_object()  # Admins can access any user
-
-    # @requires_scope('read:user_details')  # Optional: Enforce scope for access
-    # def retrieve(self, request, *args, **kwargs):
-    #     return super().retrieve(request, *args, **kwargs)
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
@@ -205,11 +50,6 @@ class CustomerList(viewsets.ModelViewSet):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-# class CustomerDetails(viewsets.ModelViewSet):
-#     queryset = Customer.objects.all()
-#     serializer_class = CustomerSerializer
-#     # permission_classes = [IsAuthenticated]
-
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
 
@@ -217,11 +57,6 @@ class SpecialtyList(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
     # permission_classes = [IsAuthenticated]
-
-# class SpecialtyDetails(viewsets.ModelViewSet):
-#     queryset = Specialty.objects.all()
-#     serializer_class = SpecialtySerializer
-#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Service Provider Views
@@ -240,12 +75,6 @@ class Service_ProviderList(viewsets.ModelViewSet):
         else:
             raise serializers.ValidationError({"user": "User ID is required to create a customer."})
 
-# class Service_ProviderDetails(viewsets.ModelViewSet):
-#     queryset = Service_Provider.objects.all()
-#     serializer_class = Service_ProviderSerializer
-#     permission_classes = []
-
-
 class JobHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
     permission_classes = []
@@ -263,11 +92,6 @@ class HomeList(viewsets.ModelViewSet):
     serializer_class = HomeSerializer
     permission_classes = []
 
-# class HomeDetails(viewsets.ModelViewSet):
-#     queryset = Home.objects.all()
-#     serializer_class = HomeSerializer
-#     permission_classes = []
-
 class HomeHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
     permission_classes = []
@@ -284,11 +108,6 @@ class RoomList(viewsets.ModelViewSet):
     serializer_class = RoomSerializer
     permission_classes = []
 
-# class RoomDetails(viewsets.ModelViewSet):
-#     queryset = Room.objects.all()
-#     serializer_class = RoomSerializer
-#     permission_classes = []
-
 #---------------------------------------------------------------------------------------------------------
 # Job Views
 
@@ -297,61 +116,12 @@ class JobList(viewsets.ModelViewSet):
     serializer_class = JobSerializer
     permission_classes = []
 
-# class JobDetails(viewsets.ModelViewSet):
-#     queryset = Job.objects.all()
-#     serializer_class = JobSerializer
-#     permission_classes = []
-
-#---------------------------------------------------------------------------------------------------------
-# Availability Views
-
-# class AvailabilityList(generics.ListCreateAPIView):
-#     queryset = Availability.objects.all()
-#     serializer_class = AvailabilitySerializer
-#     # permission_classes = [IsAuthenticated]
-
-# class AvailabilityDetails(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Availability.objects.all()
-#     serializer_class = AvailabilitySerializer
-#     # permission_classes = [IsAuthenticated]
-
-#---------------------------------------------------------------------------------------------------------
-# Payment Views
-
-# class PaymentList(generics.ListCreateAPIView):
-#     queryset = Payment.objects.all()
-#     serializer_class = PaymentSerializer
-#     # permission_classes = [IsAuthenticated]
-
-# class PaymentDetails(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Payment.objects.all()
-#     serializer_class = PaymentSerializer
-#     # permission_classes = [IsAuthenticated]
-
-#---------------------------------------------------------------------------------------------------------
-# Service Views
-
-# class ServiceList(viewsets.ModelViewSet):
-#     queryset = Service.objects.all()
-#     serializer_class = ServiceSerializer
-#     # permission_classes = [IsAuthenticated]
-
-# class ServiceDetails(viewsets.ModelViewSet):
-#     queryset = Service.objects.all()
-#     serializer_class = ServiceSerializer
-#     # permission_classes = [IsAuthenticated]
-
 #---------------------------------------------------------------------------------------------------------
 # Task Views
 class TaskList(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     # permission_classes = [IsAuthenticated]
-
-# class TaskDetails(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Task.objects.all()
-#     serializer_class = TaskSerializer
-#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 # Review Views
@@ -360,36 +130,6 @@ class ReviewList(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     # permission_classes = [IsAuthenticated]
-
-# class ReviewDetails(viewsets.ModelViewSet):
-#     queryset = Review.objects.all()
-#     serializer_class = ReviewSerializer
-#     # permission_classes = [IsAuthenticated]
-
-#---------------------------------------------------------------------------------------------------------
-# Payment Method Views
-# class Payment_MethodList(generics.ListCreateAPIView):
-#     queryset = Payment_Method.objects.all()
-#     serializer_class = Payment_MethodSerializer
-#     # permission_classes = [IsAuthenticated]
-
-# class Payment_MethodDetails(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Payment_Method.objects.all()
-#     serializer_class = Payment_MethodSerializer
-#     # permission_classes = [IsAuthenticated]
-
-#---------------------------------------------------------------------------------------------------------
-# Bank Account Views
-
-# class Bank_AccountList(generics.ListCreateAPIView):
-#     queryset = Bank_Account.objects.all()
-#     serializer_class = Bank_AccountSerializer
-#     # permission_classes = [IsAuthenticated]
-
-# class Bank_AccountDetails(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Bank_Account.objects.all()
-#     serializer_class = Bank_AccountSerializer
-#     # permission_classes = [IsAuthenticated]
 
 #---------------------------------------------------------------------------------------------------------
 
@@ -406,25 +146,6 @@ class NearbyProvidersView(APIView):
         return Response(nearby_providers)
     
 #---------------------------------------------------------------------------------------------------------
-
-#@csrf_exempt  # For simplicity, you may want to implement CSRF protection properly
-#def upload_image(request):
-   #if request.method == 'POST':
-        #file = request.FILES['image']
-        # Get the Firebase storage bucket
-   #     bucket = storage.bucket()
-        # Create a blob for the uploaded file
-    #    blob = bucket.blob(f'images/{file.name}')
-     #   blob.upload_from_file(file, content_type=file.content_type)
-
-        # Make the file publicly accessible
-      #  blob.make_public()
-
-        # Store the image URL in the database (optional)
-       # image = Image.objects.create(image_url=blob.public_url)
-
-       # return HttpResponse("Image Successfully Uploaded!")
-#    return render(request, 'main/upload_image.html')
 
 import requests
 import base64

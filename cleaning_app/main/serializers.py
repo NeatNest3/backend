@@ -4,12 +4,6 @@ from .models import *
 
 
 class UserSerializer(serializers.ModelSerializer):
-    # Required fields from the model
-    # phone = serializers.CharField(required=True, max_length=25)
-    # date_of_birth = serializers.DateField(required=True)
-    # allergies = serializers.ListField(child=serializers.CharField(), required=False)
-    # role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='customer', required=False)
-    # preferred_name = serializers.CharField(max_length=25, required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -136,43 +130,9 @@ class JobSerializer(serializers.ModelSerializer):
 
         return job
 
-# class AvailabilitySerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = Availability
-#         fields = ('__all__')
-
-
-# class PaymentSerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = Payment
-#         fields = ('__all__')
-
-
-# class ServiceSerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = Service
-#         fields = ('__all__')
-
-
 class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
         fields = ('__all__')
 
-
-# class Payment_MethodSerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = Payment_Method
-#         fields = ('__all__')
-
-
-# class Bank_AccountSerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = Bank_Account
-#         fields = ('__all__')

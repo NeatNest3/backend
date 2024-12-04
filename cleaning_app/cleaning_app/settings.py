@@ -186,12 +186,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-try:
-    from .local_settings import *
-except ImportError:
-    pass
-
-
 AWS_ACCESS_KEY_ID = 'AKIAXZEFHXWUJ577PGU7'
 AWS_SECRET_ACCESS_KEY = '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'
 AWS_STORAGE_BUCKET_NAME = ' neatnest'

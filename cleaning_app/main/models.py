@@ -310,6 +310,7 @@ class Image(models.Model):
     image_name = models.CharField(max_length=255)  # Original file name
     s3_url = models.URLField(max_length=500, blank=True, null=True)  # URL of the image in S3
     uploaded_at = models.DateTimeField(auto_now_add=True)  # Timestamp of upload
+    image = models.ImageField(upload_to='temp_uploads/', null = True)
 
     def __str__(self):
         return self.image_name

@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse
+import json
 from django.views.decorators.csrf import csrf_exempt
 from .models import Image
 from django.urls import reverse
@@ -28,6 +29,8 @@ from rest_framework.decorators import api_view, permission_classes
 from functools import wraps
 from django.db import transaction
 import jwt
+
+
 
 
 
@@ -428,64 +431,66 @@ class NearbyProvidersView(APIView):
 
 import requests
 import base64
+from .forms import ImageUploadForm
 
 LAMBDA_URL = "https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
 
 @csrf_exempt
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @parser_classes([MultiPartParser, FormParser])
 def upload_image(request):
-    if request.method == 'POST' and request.FILES['image']:
-        image_file = request.FILES['image']
-        
-        # Read the image and encode it in base64
-        image_data = image_file.read()
-        image_base64 = base64.b64encode(image_data).decode('utf-8')
-        
-        # Send the image to AWS Lambda for upload to S3
-        response = requests.post(
-            LAMBDA_URL,
-            json={
+    if request.method == 'POST':
+        form = ImageUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Retrieve the uploaded image from the form
+            uploaded_image = form.save(commit=False)
+            image_file = uploaded_image.image
+
+            # Read the image and encode it in base64
+            image_data = image_file.read()
+            image_base64 = base64.b64encode(image_data).decode('utf-8')
+
+            # Prepare payload for Lambda
+            payload = {
                 'image_base64': image_base64,
                 'file_name': image_file.name,
                 'content_type': image_file.content_type,
             }
-        )
 
-        if response.status_code == 200:
-            # Get the URL of the uploaded image from the Lambda response
-            response_data = response.json()
-            s3_url = response_data.get('url')
+            try:
+                # Send the image to AWS Lambda for upload to S3
+                response = requests.post(LAMBDA_URL, json=payload)
 
-            # Save the image metadata in your Django model
-            Image.objects.create(
-                file_name=image_file.name,
-                s3_url=s3_url
-            )
+                # Debug logs
+                print("Lambda Request Payload:", json.dumps(payload, indent=2))
+                print("Lambda Response Status Code:", response.status_code)
+                print("Lambda Response Body:", response.text)
 
-            # Return success response
-            return JsonResponse({'message': 'Image uploaded successfully', 'url': s3_url}, status=200)
+                if response.status_code == 200:
+                    # Parse the Lambda response
+                    response_data = response.json()
+                    s3_url = response_data.get('url')
+
+                    # Save metadata in the database
+                    uploaded_image.s3_url = s3_url
+                    uploaded_image.file_name = image_file.name
+                    uploaded_image.save()
+
+                    return JsonResponse({'message': 'Image uploaded successfully', 'url': s3_url}, status=200)
+                else:
+                    return JsonResponse({'error': 'Failed to upload image to S3'}, status=500)
+            except requests.RequestException as e:
+                print("RequestException:", e)
+                return JsonResponse({'error': 'Error connecting to Lambda'}, status=500)
         else:
-            return JsonResponse({'error': 'Failed to upload image to S3'}, status=500)
+            return JsonResponse({'error': 'Invalid form submission', 'form_errors': form.errors}, status=400)
 
-    return render(request, 'upload_image.html')
+    else:
+        # Render the form for GET requests
+        form = ImageUploadForm()
+        return render(request, 'upload_image.html', {'form': form})
     
-    if request.method == 'POST':
-        file = request.FILES.get('file')
-        if not file:
-            return JsonResponse({'error': 'No file provided'}, status=400)
-
-        # Set up data for the Lambda function
-        url = 'https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction'
-        files = {'file': file.read()}
-        headers = {'Content-Type': 'application/octet-stream'}
-
-        # Make the request
-        response = requests.post(url, files=files, headers=headers)
-        
-#         return HttpResponse("Image Successfully Uploaded!")
-
-        return JsonResponse({'message': 'File uploaded successfully'}, status=200)
 
 
+   
 

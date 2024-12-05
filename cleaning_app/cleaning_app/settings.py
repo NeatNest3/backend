@@ -31,7 +31,7 @@ LOGGING = {
 }
 
 DATABASES = {}
-DATABASES["default"] = dj_database_url.parse("postgresql://cleaning_app_user:58vLesjsuDZQIhTzZWfVfQjPUqQ9PIza@dpg-ct2g58lsvqrc73ai5grg-a.virginia-postgres.render.com/cleaning_app")
+#DATABASES["default"] = dj_database_url.parse("postgresql://cleaning_app_user:58vLesjsuDZQIhTzZWfVfQjPUqQ9PIza@dpg-ct2g58lsvqrc73ai5grg-a.virginia-postgres.render.com/cleaning_app")
 
 
 #load_dotenv()
@@ -102,7 +102,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [r'C:\Users\dfata\Documents\coding_temple\residency\NeatNest3\backend\cleaning_app\main\templates\main\upload_image.html'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -202,6 +202,11 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 MEDIA_URL = '/media/'
 
 MEDIA_URL = "https:// neatnest.s3.amazonaws.com/media/"
+
+import os
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 REST_FRAMEWORK = {

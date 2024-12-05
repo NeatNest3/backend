@@ -4,11 +4,15 @@ from django.conf import settings  # To reference the User model
 from django.core.validators import MinValueValidator, MaxValueValidator # to set min and max values for ratings
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 
 #---------------------------------------------------------------------------------------------------------
  
 class User(AbstractUser):
+
+    User = get_user_model
+
     def default_allergies():
         return ['none']
 

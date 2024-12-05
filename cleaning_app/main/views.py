@@ -17,6 +17,7 @@ from .utils import get_eligible_providers, get_nearby_providers
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import api_view
+from django.contrib.auth import get_user_model
 
 
 
@@ -29,6 +30,7 @@ def homepage(request):
 #---------------------------------------------------------------------------------------------------------
 # User Views
 
+User = get_user_model()
 
 class UserList(viewsets.ModelViewSet):
     queryset = User.objects.all()

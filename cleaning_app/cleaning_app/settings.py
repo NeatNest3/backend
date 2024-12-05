@@ -16,6 +16,7 @@ import os
 import logging
 import dj_database_url
 
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -50,7 +51,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() =="true"
 
-ALLOWED_HOSTS = ["https://https-www-neatnest-tech.onrender.com"]
+ALLOWED_HOSTS = ['https://https-www-neatnest-tech.onrender.com', '127.0.0.1']
 
 AUTH_USER_MODEL = 'main.User'
 

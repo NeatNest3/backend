@@ -169,5 +169,5 @@ ___
 
 <h2>Deployment</h2>
 
-
+We chose to deploy our application via <a href ="www.render.com">www.render.com</a>. Render automatically pulls from the accepted Repository in Github and automatically updates as long as the repository is up to date on all of our pushes. In order to connect render with Django a couple dependencies needed to be installed which are: gunicorn and dj_database_url. Gunicorn is a Python WSGI used to deploy web applications and dj_database_url is used for database configuration. We also needed to connect our PostgreSQL database with Render to deploy the application. In order to connect PostgreSQL dependency psycopg2-binary needs to be installed as well. To connect the PostgreSQL the internal URL was added in settings.py. Our .env file which is included in the .gitignore contains our LOCATIONIQ_API_KEY and SECRET_KEY. 
 ___

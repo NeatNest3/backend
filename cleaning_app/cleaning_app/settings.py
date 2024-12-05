@@ -17,6 +17,7 @@ import logging
 import dj_database_url
 
 
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

@@ -20,6 +20,8 @@ from rest_framework.decorators import api_view
 
 
 
+
+
 logger = logging.getLogger(__name__)
 
 def homepage(request):

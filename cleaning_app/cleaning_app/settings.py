@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-#from dotenv import load_dotenv
+from dotenv import load_dotenv
 import os
 import logging
 import dj_database_url
@@ -36,7 +36,7 @@ DATABASES = {}
 DATABASES["default"] = dj_database_url.parse("postgresql://cleaning_app_user:58vLesjsuDZQIhTzZWfVfQjPUqQ9PIza@dpg-ct2g58lsvqrc73ai5grg-a.virginia-postgres.render.com/cleaning_app")
 
 
-#load_dotenv()
+load_dotenv()
 LOCATIONIQ_API_KEY = os.getenv("LOCATIONIQ_API_KEY")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

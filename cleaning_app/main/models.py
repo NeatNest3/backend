@@ -115,12 +115,25 @@ class Specialty(models.Model):
 
 class Service_Provider(models.Model):
 
+    def default_rooms():
+        return ['bedroom','bathroom', 'kitchen','laundry','living room']
+
+    ROOM_CHOICES = [
+        ('bedroom', 'Bedroom'),
+        ('bathroom', 'Bathroom'),
+        ('kitchen', 'Kitchen'),
+        ('laundry', 'Laundry'),
+        ('living room', 'Living Room')
+    ]
+
     # Link to the User model via a One-to-One field, automatically sets the PK of User to FK of Cleaner
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     flexible_rate = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
 
     pet_friendly = models.BooleanField(default=True)
     rating = models.FloatField(validators=[MinValueValidator(1.0), MaxValueValidator(5.0)], blank=True, null=True)
+
+    preferred_rooms = models.JSONField(null=False, blank=False, default=default_rooms)
 
     background_check = models.BooleanField(default=False)
 
@@ -266,7 +279,7 @@ class Task(models.Model):
     # Basic fields
     name = models.CharField(max_length=50)
     description = models.TextField()
-    status = models.CharField(max_length=15)
+    # status = models.CharField(max_length=15)
     
     # Optional fields
     duration = models.DurationField(null=True, blank=True)  # Duration field for time intervals

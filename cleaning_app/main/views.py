@@ -29,6 +29,9 @@ from rest_framework.decorators import api_view, permission_classes
 from functools import wraps
 from django.db import transaction
 import jwt
+import requests
+import base64
+from .forms import ImageUploadForm
 
 
 
@@ -429,9 +432,6 @@ class NearbyProvidersView(APIView):
        # return HttpResponse("Image Successfully Uploaded!")
 #    return render(request, 'main/upload_image.html')
 
-import requests
-import base64
-from .forms import ImageUploadForm
 
 LAMBDA_URL = "https://cmfjyilffk.execute-api.us-west-2.amazonaws.com/default/s3LambdaFunction"
 
@@ -452,9 +452,9 @@ def upload_image(request):
 
             # Prepare payload for Lambda
             payload = {
-                'image_base64': image_base64,
-                'file_name': image_file.name,
-                'content_type': image_file.content_type,
+                'image_base64': 'image_base64',
+                'file_name': 'image.jpg',
+                'content_type': 'image/jpeg'
             }
 
             try:

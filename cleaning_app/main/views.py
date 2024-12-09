@@ -18,6 +18,7 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import api_view
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 
 
 
@@ -113,9 +114,16 @@ class HomeList(viewsets.ModelViewSet):
     serializer_class = HomeSerializer
     permission_classes = []
 
+    def get_queryset(self):
+        customer = self.request.query_params.get('customer')
+        if customer:
+            return self.queryset.filter(customer=customer)
+        return self.queryset
+
 class HomeHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
     permission_classes = []
+
 
     def get_queryset(self):
         home_id = self.kwargs['pk']

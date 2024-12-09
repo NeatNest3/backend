@@ -19,13 +19,16 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Create the user using the validated data
         user = User.objects.create_user(
-            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            password=validated_data['password'],
+            username=validated_data['email'],
             email=validated_data['email'],
             date_of_birth=validated_data['date_of_birth'],
+            phone=validated_data['phone']
         )
 
         # Assign optional fields with default values if not present
-        user.phone = validated_data.get('phone', '')  # Set default as empty string
         user.role = validated_data.get('role', 'customer')  # Default to 'customer'
         user.allergies = validated_data.get('allergies', [])  # Default to empty list
         

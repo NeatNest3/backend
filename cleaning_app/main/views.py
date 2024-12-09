@@ -36,6 +36,23 @@ class UserList(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = []
+    
+    def create(self, request, *args, **kwargs):
+        # First, we handle the creation of the User
+        user_serializer = self.get_serializer(data=request.data)
+        if user_serializer.is_valid():
+            # Save the user
+            user = user_serializer.save()
+
+            # If the role is 'customer', create a related Customer instance
+            if user.role == 'customer':
+                # Create a customer linked to the user
+                customer = Customer.objects.create(user=user)
+                customer.save()
+
+            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views

@@ -201,6 +201,10 @@ MEDIA_URL = "https:// neatnest.s3.amazonaws.com/media/"
 
 
 REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',  # Handles JSON requests
+        'rest_framework.renderers.BrowsableAPIRenderer',  # For the browsable API
+    ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',

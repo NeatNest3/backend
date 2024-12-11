@@ -57,7 +57,13 @@ class UserList(viewsets.ModelViewSet):
 
             return Response(user_serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)   
+    
+    def get_queryset(self):
+        email = self.request.query_params.get('email')
+        if email:
+            return self.queryset.filter(email=email)
+        return self.queryset 
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views

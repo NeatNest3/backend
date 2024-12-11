@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 import os
 import logging
 import dj_database_url
@@ -36,7 +36,7 @@ DATABASES = {}
 DATABASES["default"] = dj_database_url.parse("postgresql://cleaning_app_user:58vLesjsuDZQIhTzZWfVfQjPUqQ9PIza@dpg-ct2g58lsvqrc73ai5grg-a.virginia-postgres.render.com/cleaning_app")
 
 
-load_dotenv()
+#load_dotenv()
 LOCATIONIQ_API_KEY = os.getenv("LOCATIONIQ_API_KEY")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -47,12 +47,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", "FallBackKey")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() =="true"
 
-ALLOWED_HOSTS = ['https-www-neatnest-tech.onrender.com', '127.0.0.1']
+ALLOWED_HOSTS = ['https-www-neatnest-tech.onrender.com', '127.0.0.1', '192.168.1.4']
 
 AUTH_USER_MODEL = 'main.User'
 
@@ -201,6 +201,10 @@ MEDIA_URL = "https:// neatnest.s3.amazonaws.com/media/"
 
 
 REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',  # Handles JSON requests
+        'rest_framework.renderers.BrowsableAPIRenderer',  # For the browsable API
+    ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',

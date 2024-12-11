@@ -18,6 +18,11 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import api_view
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from rest_framework.renderers import JSONRenderer
+import json
+from django.http import QueryDict
+
 
 
 
@@ -36,6 +41,23 @@ class UserList(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = []
+    
+    def create(self, request, *args, **kwargs):
+        # First, we handle the creation of the User
+        user_serializer = self.get_serializer(data=request.data)
+        if user_serializer.is_valid():
+            # Save the user
+            user = user_serializer.save()
+
+            # If the role is 'customer', create a related Customer instance
+            if user.role == 'customer':
+                # Create a customer linked to the user
+                customer = Customer.objects.create(user=user)
+                customer.save()
+
+            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
@@ -96,9 +118,16 @@ class HomeList(viewsets.ModelViewSet):
     serializer_class = HomeSerializer
     permission_classes = []
 
+    def get_queryset(self):
+        customer = self.request.query_params.get('customer')
+        if customer:
+            return self.queryset.filter(customer=customer)
+        return self.queryset
+
 class HomeHistoryList(generics.ListAPIView):
     serializer_class = JobSerializer
     permission_classes = []
+
 
     def get_queryset(self):
         home_id = self.kwargs['pk']
@@ -119,6 +148,23 @@ class JobList(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     permission_classes = []
+
+    def create(self, request, *args, **kwargs):
+        if isinstance(request.data, QueryDict):
+            try:
+                data = json.loads(request.data.get('_content', '{}'))
+            except json.JSONDecodeError:
+                return Response({"error": "Invalid JSON"}, status=400)
+        else:
+            data = request.data
+
+        print("Parsed Data:", data)  # Debug parsed data
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print("Errors:", serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #---------------------------------------------------------------------------------------------------------
 # Task Views

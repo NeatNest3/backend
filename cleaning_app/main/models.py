@@ -272,11 +272,11 @@ class Task(models.Model):
     # Notes fields
     service_provider_notes = models.TextField(blank=True, null=True)
     customer_notes = models.TextField(blank=True, null=True)
+ 
 
 
-
-#     def __str__(self):
-#         return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
+    def __str__(self):
+        return f"{self.name} - Status: {self.status} (${self.price or 'N/A'})"
 
     
 #---------------------------------------------------------------------------------------------------------

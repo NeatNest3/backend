@@ -171,3 +171,120 @@ ___
 
 We chose to deploy our application via <a href ="www.render.com">www.render.com</a>. Render automatically pulls from the accepted Repository in Github and automatically updates as long as the repository is up to date on all of our pushes. In order to connect render with Django a couple dependencies needed to be installed which are: gunicorn and dj_database_url. Gunicorn is a Python WSGI used to deploy web applications and dj_database_url is used for database configuration. We also needed to connect our PostgreSQL database with Render to deploy the application. In order to connect PostgreSQL dependency psycopg2-binary needs to be installed as well. To connect the PostgreSQL the internal URL was added in settings.py. Our .env file which is included in the .gitignore contains our LOCATIONIQ_API_KEY and SECRET_KEY. 
 ___
+
+
+# Image Upload and Management
+
+This document explains how the image upload functionality works in the app and how it integrates with AWS S3 using a Lambda function. It covers the setup, models, views, and API usage.
+
+---
+
+## **Features**
+- Upload images to the app.
+- Store uploaded images in an AWS S3 bucket (`neatnest`).
+- Handle image files using a Django model.
+- Use AWS Lambda for S3 upload.
+- Serve image URLs back to the client.
+
+---
+
+## **Setup**
+
+### **1. AWS Configuration**
+
+1. **S3 Bucket:**
+   - Create an S3 bucket named `neatnest` in your AWS account.
+   - Configure the bucket permissions to allow public read access for uploaded objects.
+
+2. **IAM Role for Lambda:**
+   - Create an IAM role with the following permissions:
+     - `s3:PutObject`
+     - `s3:GetObject`
+   - Attach this role to your AWS Lambda function.
+
+3. **AWS Lambda Function:**
+   - Create an AWS Lambda function for uploading images to S3.
+   - Use the provided Python code in `lambda_function.py` (see below) to handle image uploads.
+   - Configure environment variables for `BUCKET_NAME` and any other required settings.
+
+### **2. Django Configuration**
+
+1. Install the required libraries:
+   ```bash
+   pip install boto3
+   ```
+
+2. Add the following settings to `settings.py`:
+   ```python
+   AWS_ACCESS_KEY_ID = "<your-access-key-id>"
+   AWS_SECRET_ACCESS_KEY = "<your-secret-access-key>"
+   AWS_REGION = "<your-region>"
+   AWS_S3_BUCKET = "bucket_name"
+   AWS_S3_URL = f"https://{AWS_S3_BUCKET}.s3.amazonaws.com/"
+   ```
+
+---
+
+## **Models**
+
+The `Image` model is used to store metadata about uploaded images, including the S3 URL.
+
+```python
+from django.db import models
+
+class Image(models.Model):
+    title = models.CharField(max_length=255)
+    s3_url = models.URLField()  # Stores the S3 URL of the image
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+```
+
+---
+
+## **Views**
+
+The image upload API endpoint allows users to upload images and saves the S3 URL in the database.
+
+---
+
+## **AWS Lambda Function**
+
+The Lambda function receives the image file and uploads it to S3.
+
+---
+
+## **Testing the API**
+
+### **1. Using Postman**
+
+1. Set the URL to `http://127.0.0.1:8000/upload/`.
+2. Use the POST method.
+3. Add the following form-data:
+   - `title`: (string) Title of the image.
+   - `file`: (file) Select an image file to upload.
+
+4. Send the request.
+
+#### Example Response:
+```json
+{
+    "message": "Image uploaded successfully",
+    "image": {
+        "id": 1,
+        "s3_url": "https://neatnest.s3.amazonaws.com/unique-image-id.jpg"
+    }
+}
+```
+
+---
+
+## **Troubleshooting**
+
+- **"No image file provided":** Ensure you are sending the file in the `file` field of the POST request.
+- **"Failed to upload image to S3":** Verify your AWS Lambda function URL and permissions.
+- **"Token authentication failed":** Ensure you are passing a valid Firebase ID token if required.
+
+For further assistance, contact the development team.
+

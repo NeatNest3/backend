@@ -197,13 +197,13 @@ class Home(models.Model):
     def __str__(self):
         return f"{self.customer.user.first_name} {self.customer.user.last_name}: {self.home_name} - {self.address_line_one}, {self.city}"
 
-    def clean(self):
-        super().clean()
-        for pet, count in self.pets.items():
-            if pet not in self.PET_TYPE_CHOICES:
-                raise ValidationError(f"{pet} is not a recognized pet type.")
-            if not isinstance(count, int) or count < 0:
-                raise ValidationError(f"Count for {pet} should be a non-negative integer.")
+    # def clean(self):
+    #     super().clean()
+    #     for pet, count in self.pets.items():
+    #         if pet not in self.PET_TYPE_CHOICES:
+    #             raise ValidationError(f"{pet} is not a recognized pet type.")
+    #         if not isinstance(count, int) or count < 0:
+    #             raise ValidationError(f"Count for {pet} should be a non-negative integer.")
             
 #------------------------------------------------------------------------------------------------------------
 

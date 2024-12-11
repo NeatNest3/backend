@@ -57,7 +57,13 @@ class UserList(viewsets.ModelViewSet):
 
             return Response(user_serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)   
+    
+    def get_queryset(self):
+        email = self.request.query_params.get('email')
+        if email:
+            return self.queryset.filter(email=email)
+        return self.queryset 
 
 #---------------------------------------------------------------------------------------------------------
 # Customer Views
@@ -67,14 +73,20 @@ class CustomerList(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     # permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        # Here, 'user' should be included in the validated data sent from the frontend.
-        # Ensure that the user ID is provided in the request data.
-        user = self.request.data.get('user')
+    # def perform_create(self, serializer):
+    #     # Here, 'user' should be included in the validated data sent from the frontend.
+    #     # Ensure that the user ID is provided in the request data.
+    #     user = self.request.data.get('user')
+    #     if user:
+    #         serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
+    #     else:
+    #         raise serializers.ValidationError({"user": "User ID is required to create a customer."})
+    
+    def get_queryset(self):
+        user = self.request.query_params.get('user')
         if user:
-            serializer.save(user_id=user)  # This sets the user_id on the Customer instance being created.
-        else:
-            raise serializers.ValidationError({"user": "User ID is required to create a customer."})
+            return self.queryset.filter(user=user)
+        return self.queryset
 
 #---------------------------------------------------------------------------------------------------------
 # Specialty Views
